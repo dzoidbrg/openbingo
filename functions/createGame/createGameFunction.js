@@ -16,10 +16,16 @@ module.exports = async function (req, res) {
     const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
     console.log("Parsed payload:", payload);
 
-    const { creatorId, boardSize, events, gameCode, votingThreshold } = payload;
-    if (!creatorId || !boardSize || !events || !gameCode || !votingThreshold) {
-      return res.json({ error: "Missing required fields: creatorId, boardSize, events, gameCode, votingThreshold." });
+    const { creatorId, boardSize, events, votingThreshold } = payload;
+    if (!creatorId || !boardSize || !events || !votingThreshold) {
+      return res.json({
+        success: false,
+        error: "Missing required fields: creatorId, boardSize, events, votingThreshold."
+      });
     }
+
+    // Generate a random 4-character game code if not provided
+    const gameCode = payload.gameCode || Math.random().toString(36).substring(2, 6).toUpperCase();
 
     // Create the game document
     const game = await database.createDocument(
@@ -44,6 +50,6 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in createGameFunction:", error);
-    return res.json({ error: error.message || "Unknown error occurred" });
+    return res.json({ success: false, error: error.message || "Unknown error occurred" });
   }
 };

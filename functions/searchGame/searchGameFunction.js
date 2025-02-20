@@ -19,7 +19,10 @@ module.exports = async function (req, res) {
 
     const { gameCode } = payload;
     if (!gameCode) {
-      return res.json({ error: "Missing required field: gameCode." });
+      return res.json({
+      success: false,
+      error: "Missing required field: gameCode."
+    });
     }
 
     // Search for game using gameCode
@@ -30,7 +33,10 @@ module.exports = async function (req, res) {
     );
 
     if (result.total === 0) {
-      return res.json({ error: "Game not found." });
+      return res.json({
+        success: false,
+        error: "Game not found."
+      });
     }
 
     console.log("Found game document:", result.documents[0]);
@@ -38,6 +44,9 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in searchGameFunction:", error);
-    return res.json({ error: error.message || "Unknown error occurred" });
+    return res.json({
+      success: false,
+      error: error.message || "Unknown error occurred"
+    });
   }
 };

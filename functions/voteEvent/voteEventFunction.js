@@ -18,7 +18,10 @@ module.exports = async function (req, res) {
 
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
-      return res.json({ error: 'Missing parameters: gameId, eventIndex, and userId are required.' });
+      return res.json({
+        success: false,
+        error: 'Missing parameters: gameId, eventIndex, and userId are required.'
+      });
     }
 
     // Fetch the game document
@@ -57,6 +60,9 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in voteEventFunction:", error);
-    return res.json({ error: error.message || "Unknown error occurred" });
+    return res.json({
+        success: false,
+        error: error.message || "Unknown error occurred"
+      });
   }
 };
