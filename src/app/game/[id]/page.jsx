@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { databases, realtime, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
+import {
+  databases,
+  subscribeRealtime,
+  BINGO_DATABASE_ID,
+  GAMES_COLLECTION_ID,
+  getOrCreateAnonymousSession,
+  functions
+} from '@/lib/appwrite';
+import { Share2 } from 'lucide-react';
 
 export default function GamePage({ params }) {
   const [game, setGame] = useState(null);
@@ -10,6 +18,7 @@ export default function GamePage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalEventIndex, setModalEventIndex] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Get current user session
   useEffect(() => {
@@ -44,42 +53,23 @@ export default function GamePage({ params }) {
 
     fetchGame();
 
-    // Subscribe to realtime changes for this game document
-    const unsubscribe = realtime.subscribe(
-      `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${params.id}`,
-      (response) => {
-        if(response.payload) {
-          setGame(response.payload);
-        }
+    // Subscribe to realtime changes using the subscribeRealtime helper
+    const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${params.id}`;
+    const unsubscribe = subscribeRealtime(channel, (response) => {
+      if (response.payload) {
+        setGame(response.payload);
       }
-    );
+    });
 
     return () => unsubscribe();
   }, [params.id]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error || !game) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-red-500">{error || 'Game not found'}</div>
-      </div>
-    );
-  }
-
   // Determine if the current user is the host (creator)
-  const isHost = game.creatorId === userId;
+  const isHost = game && game.creatorId === userId;
 
   // Handle starting the game (only host)
   const handleStartGame = async () => {
     try {
-      // Update the game document status to "started"
       await databases.updateDocument(
         BINGO_DATABASE_ID,
         GAMES_COLLECTION_ID,
@@ -91,7 +81,7 @@ export default function GamePage({ params }) {
     }
   };
 
-  // Call the voteEvent cloud function for a given event index.
+  // Handle vote for an event index.
   const handleVote = async (eventIndex) => {
     try {
       const payload = JSON.stringify({
@@ -119,17 +109,138 @@ export default function GamePage({ params }) {
     3: 'grid-cols-3',
     4: 'grid-cols-4',
     5: 'grid-cols-5'
-  }[game.boardSize] || 'grid-cols-3';
+  }[game?.boardSize] || 'grid-cols-3';
 
-  // Determine which players have this event ticked (based on their "ticked" array)
+  // Get players who have marked a given event
   const getPlayersForEvent = (eventIndex) => {
-    return (game.players || []).filter(player =>
+    return (game?.players || []).filter(player =>
       player.ticked && player.ticked.includes(eventIndex)
     );
   };
 
+  // Check if the current player has won using their personal board.
+  const checkWinCondition = () => {
+    if (!game || !game.boardSize || !game.players) return false;
+    const currentPlayer = game.players.find(player => player.userId === userId);
+    if (!currentPlayer || !currentPlayer.ticked) return false;
+
+    const size = game.boardSize;
+    // Create a board using the player's ticked array
+    const board = Array.from({ length: size }, () => Array(size).fill(false));
+    currentPlayer.ticked.forEach(index => {
+      const row = Math.floor(index / size);
+      const col = index % size;
+      board[row][col] = true;
+    });
+
+    // Check rows, columns, and diagonals
+    for (let i = 0; i < size; i++) {
+      if (board[i].every(cell => cell)) return true;
+    }
+    for (let j = 0; j < size; j++) {
+      if (board.every(row => row[j])) return true;
+    }
+    const mainDiagonal = Array(size).fill().every((_, i) => board[i][i]);
+    const antiDiagonal = Array(size).fill().every((_, i) => board[i][size - 1 - i]);
+    return mainDiagonal || antiDiagonal;
+  };
+
+  // When a win is detected, update the game (if not already done) and redirect to the winner page.
+  useEffect(() => {
+    if (game && userId && game.status === 'started' && checkWinCondition()) {
+      const currentPlayer = game.players.find(player => player.userId === userId);
+      const winner = currentPlayer ? currentPlayer.username : 'Unknown';
+      if (!game.winner) {
+        // Update the game document with the winner's username
+        databases.updateDocument(
+          BINGO_DATABASE_ID,
+          GAMES_COLLECTION_ID,
+          game.$id,
+          { winner }
+        ).catch(err => console.error('Error updating winner:', err));
+      }
+      // Redirect to the winner page
+      window.location.href = `/winner/${game.$id}`;
+    }
+  }, [game, userId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !game) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-red-500">{error || 'Game not found'}</div>
+      </div>
+    );
+  }
+
+  // Handle share functionality
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Game link copied to clipboard!');
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+    }
+  };
+
+  const handleEmailShare = () => {
+    const shareUrl = window.location.href;
+    const subject = encodeURIComponent('Join my Bingo game!');
+    const body = encodeURIComponent(`Join my Bingo game at: ${shareUrl}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="min-h-screen p-4">
+      {/* Share button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setShowShareModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+        >
+          <Share2 className="w-4 h-4" />
+          Share Game
+        </button>
+      </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-card p-6 rounded-lg w-96">
+            <h3 className="text-xl font-bold mb-4">Share Game</h3>
+            <div className="space-y-4">
+              <button
+                onClick={handleShare}
+                className="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+              >
+                Copy Link
+              </button>
+              <button
+                onClick={handleEmailShare}
+                className="w-full px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
+              >
+                Share via Email
+              </button>
+            </div>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="mt-4 w-full px-4 py-2 border border-input rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting Room for players (before game start) */}
       {game.status === 'waiting' && (
         <div className="mb-4 p-4 border border-dashed border-secondary rounded-md">
           <h2 className="text-2xl font-bold mb-2">Waiting Room</h2>
@@ -150,6 +261,7 @@ export default function GamePage({ params }) {
         </div>
       )}
 
+      {/* Game Board */}
       {game.status === 'started' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left: Personal Bingo Board */}
@@ -179,7 +291,6 @@ export default function GamePage({ params }) {
             <div className="space-y-4">
               {game.events.map((event, index) => {
                 const voteCount = (game.votes && game.votes[index]) || 0;
-                // Calculate required votes (as percentage of players)
                 const totalPlayers = (game.players || []).length;
                 const requiredVotes = Math.ceil(totalPlayers * game.votingThreshold / 100);
                 const verified = game.verifiedEvents && game.verifiedEvents.includes(index);
