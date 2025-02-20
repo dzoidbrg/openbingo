@@ -7,7 +7,7 @@ client
   .setKey(process.env.APPWRITE_API_KEY);
 
 const database = new sdk.Databases(client);
-const query = sdk.Query;
+const Query = sdk.Query;
 
 module.exports = async function (req, res) {
   try {
@@ -18,35 +18,46 @@ module.exports = async function (req, res) {
     console.log("Parsed payload:", payload);
 
     const { gameCode } = payload;
-    if (!gameCode) {
-      return res.json({
-      success: false,
-      error: "Missing required field: gameCode."
-    });
-    }
-
-    // Search for game using gameCode
-    const result = await database.listDocuments(
-      process.env.BINGO_DATABASE_ID,
-      process.env.GAMES_COLLECTION_ID,
-      [query.equal("gameCode", gameCode)]
-    );
-
-    if (result.total === 0) {
+    if (!gameCode || typeof gameCode !== 'string') {
       return res.json({
         success: false,
-        error: "Game not found."
+        error: "Missing or invalid gameCode. Must be a string."
       });
     }
 
-    console.log("Found game document:", result.documents[0]);
-    return res.json({ success: true, game: result.documents[0] });
+    // Search for game using gameCode with proper query filter
+    const result = await database.listDocuments(
+      process.env.BINGO_DATABASE_ID,
+      process.env.GAMES_COLLECTION_ID,
+      [
+        Query.equal("gameCode", [gameCode.toUpperCase()]),
+        Query.limit(1)
+      ]
+    );
+
+    if (!result || result.total === 0) {
+      return res.json({
+        success: false,
+        error: "Game not found with the provided code."
+      });
+    }
+
+    const game = result.documents[0];
+    console.log("Found game document:", game);
+    
+    return res.json({
+      success: true,
+      game: {
+        ...game,
+        gameCode: game.gameCode
+      }
+    });
 
   } catch (error) {
     console.error("Error in searchGameFunction:", error);
     return res.json({
       success: false,
-      error: error.message || "Unknown error occurred"
+      error: error.message || "An unexpected error occurred while searching for the game"
     });
   }
 };

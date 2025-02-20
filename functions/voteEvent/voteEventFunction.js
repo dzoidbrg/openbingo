@@ -24,6 +24,14 @@ module.exports = async function (req, res) {
       });
     }
 
+    // Validate eventIndex is a number
+    if (typeof eventIndex !== 'number' || eventIndex < 0) {
+      return res.json({
+        success: false,
+        error: 'eventIndex must be a non-negative number.'
+      });
+    }
+
     // Fetch the game document
     const game = await database.getDocument(
       process.env.BINGO_DATABASE_ID,
@@ -31,10 +39,38 @@ module.exports = async function (req, res) {
       gameId
     );
 
+    if (!game) {
+      return res.json({
+        success: false,
+        error: 'Game not found.'
+      });
+    }
+
+    // Validate the player is in the game
+    if (!game.players?.some(player => player.userId === userId)) {
+      return res.json({
+        success: false,
+        error: 'User is not a participant in this game.'
+      });
+    }
+
+    // Validate eventIndex is within bounds
+    if (eventIndex >= game.events?.length) {
+      return res.json({
+        success: false,
+        error: 'Invalid event index.'
+      });
+    }
+
     console.log("Fetched game data:", game);
 
     let votes = game.votes || [];
     let verifiedEvents = game.verifiedEvents || [];
+
+    // Initialize votes array if needed
+    if (votes.length < game.events.length) {
+      votes = new Array(game.events.length).fill(0);
+    }
 
     votes[eventIndex] = (votes[eventIndex] || 0) + 1;
 
@@ -47,22 +83,32 @@ module.exports = async function (req, res) {
       verifiedEvents.push(eventIndex);
     }
 
-    // Update the document
-    const updatedGame = await database.updateDocument(
-      process.env.BINGO_DATABASE_ID,
-      process.env.GAMES_COLLECTION_ID,
-      gameId,
-      { votes, verifiedEvents }
-    );
+    // Update the document with optimistic concurrency control
+    try {
+      const updatedGame = await database.updateDocument(
+        process.env.BINGO_DATABASE_ID,
+        process.env.GAMES_COLLECTION_ID,
+        gameId,
+        { votes, verifiedEvents }
+      );
 
-    console.log("Updated game document:", updatedGame);
-    return res.json({ success: true, game: updatedGame });
+      console.log("Updated game document:", updatedGame);
+      return res.json({ success: true, game: updatedGame });
+    } catch (updateError) {
+      if (updateError.code === 409) {
+        return res.json({
+          success: false,
+          error: 'Game was modified by another player. Please try again.'
+        });
+      }
+      throw updateError;
+    }
 
   } catch (error) {
     console.error("Error in voteEventFunction:", error);
     return res.json({
-        success: false,
-        error: error.message || "Unknown error occurred"
-      });
+      success: false,
+      error: error.message || "Unknown error occurred"
+    });
   }
 };
