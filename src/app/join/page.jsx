@@ -12,6 +12,7 @@ export default function JoinGame() {
   const [step, setStep] = useState('code'); // 'code' or 'username'
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function JoinGame() {
   const handleVerifyCode = async () => {
     const code = gameCode.join('');
     if (code.length === 4) {
+      setIsLoading(true);
       try {
         const payload = JSON.stringify({ gameCode: code });
         const result = await functions.createExecution('67b741820010d7638006', payload);
@@ -54,6 +56,8 @@ export default function JoinGame() {
       } catch (error) {
         console.error('Error verifying game:', error);
         setError('Game not found. Please check the code.');
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -61,8 +65,8 @@ export default function JoinGame() {
   const handleJoinGame = async () => {
     const code = gameCode.join('');
     if (code.length === 4 && userId && username.trim()) {
+      setIsLoading(true);
       try {
-        // First, get the game ID using the searchGame function
         const searchPayload = JSON.stringify({ gameCode: code });
         const searchResult = await functions.createExecution('searchGame', searchPayload);
         const searchResponse = JSON.parse(searchResult.response);
@@ -71,20 +75,17 @@ export default function JoinGame() {
           throw new Error('Game not found');
         }
 
-        // Then join the game using joinGame function.
-        // The joinGame cloud function should update the game document's permissions,
-        // adding the current user (userId) to the document's read permissions.
         const joinPayload = JSON.stringify({
           gameId: searchResponse.game.$id,
           userId: userId,
           username: username.trim()
         });
         await functions.createExecution('joinGame', joinPayload);
-        // Redirect to game page (the user now has permission to read this document)
         window.location.href = `/game/${searchResponse.game.$id}`;
       } catch (error) {
         console.error('Error joining game:', error);
         setError('Failed to join game. Please try again.');
+        setIsLoading(false);
       }
     }
   };
@@ -130,9 +131,9 @@ export default function JoinGame() {
           <button
             onClick={handleVerifyCode}
             className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            disabled={gameCode.join('').length !== 4 || !userId}
+            disabled={gameCode.join('').length !== 4 || !userId || isLoading}
           >
-            Next
+            {isLoading ? 'Loading...' : 'Next'}
           </button>
         </>
       ) : (
@@ -156,9 +157,9 @@ export default function JoinGame() {
           <button
             onClick={handleJoinGame}
             className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            disabled={!username.trim() || !userId}
+            disabled={!username.trim() || !userId || isLoading}
           >
-            Join Game
+            {isLoading ? 'Loading...' : 'Join Game'}
           </button>
         </>
       )}
