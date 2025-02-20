@@ -11,6 +11,7 @@ module.exports = async function(req, res) {
   const GAMES_COLLECTION_ID = process.env.GAMES_COLLECTION_ID;
 
   try {
+    console.log(req)
     console.log(req.payload);
     const { gameCode } = JSON.parse(req.payload);
     if (!gameCode) {
