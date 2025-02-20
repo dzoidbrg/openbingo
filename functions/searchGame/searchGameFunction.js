@@ -1,45 +1,43 @@
-const { Client, Databases, Query } = require('node-appwrite');
+const sdk = require('node-appwrite');
 
-module.exports = async function(req, res) {
-  const client = new Client()
-    .setEndpoint('https://cloud.appwrite.io/v1')
-    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
+const client = new sdk.Client();
+client
+  .setEndpoint(process.env.APPWRITE_ENDPOINT) 
+  .setProject(process.env.APPWRITE_PROJECT_ID)
+  .setKey(process.env.APPWRITE_API_KEY);
 
-  const database = new Databases(client);
-  const BINGO_DATABASE_ID = process.env.BINGO_DATABASE_ID;
-  const GAMES_COLLECTION_ID = process.env.GAMES_COLLECTION_ID;
+const database = new sdk.Databases(client);
+const query = sdk.Query;
 
+module.exports = async function (req, res) {
   try {
-    console.log(req)
-    console.log(req.payload);
-    const { gameCode } = JSON.parse(req.payload);
+    console.log("Received request:", req);
+
+    // Extract payload safely
+    const payload = req.bodyJson || JSON.parse(req.body || '{}');
+    console.log("Parsed payload:", payload);
+
+    const { gameCode } = payload;
     if (!gameCode) {
-      throw new Error('Game code is required');
+      return res.json({ error: "Missing required field: gameCode." });
     }
 
-    const games = await database.listDocuments(
-      BINGO_DATABASE_ID,
-      GAMES_COLLECTION_ID,
-      [Query.equal('gameCode', gameCode)]
+    // Search for game using gameCode
+    const result = await database.listDocuments(
+      process.env.BINGO_DATABASE_ID,
+      process.env.GAMES_COLLECTION_ID,
+      [query.equal("gameCode", gameCode)]
     );
 
-    if (games.total === 0) {
-      return res.json({
-        success: false,
-        message: 'Game not found'
-      });
+    if (result.total === 0) {
+      return res.json({ error: "Game not found." });
     }
 
-    return res.json({
-      success: true,
-      game: games.documents[0]
-    });
+    console.log("Found game document:", result.documents[0]);
+    return res.json({ success: true, game: result.documents[0] });
+
   } catch (error) {
-    console.error('Error searching game:', error);
-    return res.json({
-      success: false,
-      message: error.message || 'Failed to search game'
-    });
+    console.error("Error in searchGameFunction:", error);
+    return res.json({ error: error.message || "Unknown error occurred" });
   }
 };

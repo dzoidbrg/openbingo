@@ -1,61 +1,49 @@
-const { Client, Databases, ID } = require('node-appwrite');
+const sdk = require('node-appwrite');
 
-module.exports = async function(req, res) {
-  const client = new Client()
-    .setEndpoint('https://cloud.appwrite.io/v1')
-    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
+const client = new sdk.Client();
+client
+  .setEndpoint(process.env.APPWRITE_ENDPOINT) 
+  .setProject(process.env.APPWRITE_PROJECT_ID)
+  .setKey(process.env.APPWRITE_API_KEY);
 
-  const database = new Databases(client);
-  const BINGO_DATABASE_ID = process.env.BINGO_DATABASE_ID;
-  const GAMES_COLLECTION_ID = process.env.GAMES_COLLECTION_ID;
+const database = new sdk.Databases(client);
 
+module.exports = async function (req, res) {
   try {
-    const { creatorId, events, boardSize, votingThreshold } = JSON.parse(req.payload);
+    console.log("Received request:", req);
 
-    if (!creatorId || !events || !boardSize || !votingThreshold) {
-      throw new Error('Missing required fields');
+    // Extract payload safely
+    const payload = req.bodyJson || JSON.parse(req.body || '{}');
+    console.log("Parsed payload:", payload);
+
+    const { creatorId, boardSize, events, gameCode, votingThreshold } = payload;
+    if (!creatorId || !boardSize || !events || !gameCode || !votingThreshold) {
+      return res.json({ error: "Missing required fields: creatorId, boardSize, events, gameCode, votingThreshold." });
     }
 
-    // Generate a random 4-character game code
-    const gameCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-    // Initialize votes as an array of zeros (one per event)
-    const votes = new Array(events.length).fill(0);
-
-    // Set initial read permissions to include the host
-    const readPermissions = [`user:${creatorId}`];
-    // Optionally, set write permissions (for example, to only allow the host to update)
-    const writePermissions = [`user:${creatorId}`];
-
+    // Create the game document
     const game = await database.createDocument(
-      BINGO_DATABASE_ID,
-      GAMES_COLLECTION_ID,
-      ID.unique(),
+      process.env.BINGO_DATABASE_ID,
+      process.env.GAMES_COLLECTION_ID,
+      sdk.ID.unique(),
       {
         creatorId,
-        events,
         boardSize,
-        votingThreshold,
+        events,
+        status: "waiting",
         gameCode,
-        status: 'waiting',
-        players: [],
-        votes,
-        verifiedEvents: []
-      },
-      readPermissions,
-      writePermissions
+        votingThreshold,
+        players: [], // Initially empty
+        votes: new Array(events.length).fill(0), // Initialize votes array
+        verifiedEvents: [] // Empty at start
+      }
     );
 
-    return res.json({
-      success: true,
-      game
-    });
+    console.log("Created game document:", game);
+    return res.json({ success: true, game });
+
   } catch (error) {
-    console.error('Error creating game:', error);
-    return res.json({
-      success: false,
-      message: error.message || 'Failed to create game'
-    });
+    console.error("Error in createGameFunction:", error);
+    return res.json({ error: error.message || "Unknown error occurred" });
   }
 };
