@@ -123,7 +123,7 @@ export default function CreateGame() {
         userId,
         username: username.trim()
       });
-      await functions.createExecution('joinGame', payload);
+      await functions.createExecution('67b713e9000667794adc', payload);
       // After joining, redirect to game page
       window.location.href = `/game/${createdGame.$id}`;
     } catch (error) {

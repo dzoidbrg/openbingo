@@ -79,7 +79,7 @@ export default function JoinGame() {
           userId: userId,
           username: username.trim()
         });
-        await functions.createExecution('joinGame', payload);
+        await functions.createExecution('67b713e9000667794adc', payload);
         window.location.href = `/game/${(await databases.listDocuments(
             BINGO_DATABASE_ID,
             GAMES_COLLECTION_ID,
