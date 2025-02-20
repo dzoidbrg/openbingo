@@ -41,19 +41,15 @@ export default function JoinGame() {
     const code = gameCode.join('');
     if (code.length === 4) {
       try {
-        // Query the game by gameCode
-        const game = await databases.listDocuments(
-          BINGO_DATABASE_ID,
-          GAMES_COLLECTION_ID,
-          [
-            Query.equal('gameCode', code)
-          ]
-        );
-        if (game.total > 0) {
+        const payload = JSON.stringify({ gameCode: code });
+        const result = await functions.createExecution('searchGame', payload);
+        const response = JSON.parse(result.response);
+
+        if (response.success) {
           setStep('username');
           setError('');
         } else {
-          setError('Game not found. Please check the code.');
+          setError(response.message || 'Game not found. Please check the code.');
         }
       } catch (error) {
         console.error('Error verifying game:', error);
@@ -66,25 +62,23 @@ export default function JoinGame() {
     const code = gameCode.join('');
     if (code.length === 4 && userId && username.trim()) {
       try {
-        // Call the secure cloud function "joinGame"
-        const payload = JSON.stringify({
-          // Here we assume that the game’s document ID is the one returned from the query.
-          // In production you might want to pass the document ID rather than the game code.
-          // For simplicity, we assume that the game code is unique.
-          gameId: (await databases.listDocuments(
-            BINGO_DATABASE_ID,
-            GAMES_COLLECTION_ID,
-            [Query.equal('gameCode', code)]
-          )).documents[0].$id,
+        // First, get the game ID using searchGame function
+        const searchPayload = JSON.stringify({ gameCode: code });
+        const searchResult = await functions.createExecution('searchGame', searchPayload);
+        const searchResponse = JSON.parse(searchResult.response);
+
+        if (!searchResponse.success) {
+          throw new Error('Game not found');
+        }
+
+        // Then join the game using joinGame function
+        const joinPayload = JSON.stringify({
+          gameId: searchResponse.game.$id,
           userId: userId,
           username: username.trim()
         });
-        await functions.createExecution('67b713e9000667794adc', payload);
-        window.location.href = `/game/${(await databases.listDocuments(
-            BINGO_DATABASE_ID,
-            GAMES_COLLECTION_ID,
-            [Query.equal('gameCode', code)]
-          )).documents[0].$id}`;
+        await functions.createExecution('joinGame', joinPayload);
+        window.location.href = `/game/${searchResponse.game.$id}`;
       } catch (error) {
         console.error('Error joining game:', error);
         setError('Failed to join game. Please try again.');

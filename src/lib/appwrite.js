@@ -27,13 +27,18 @@ export const setRealtimeEndpoint = (endpoint) => {
 // Helper functions for common Appwrite operations
 export const createGame = async (gameData) => {
   try {
-    const response = await databases.createDocument(
-      BINGO_DATABASE_ID,
-      GAMES_COLLECTION_ID,
-      'unique()',
-      gameData
-    );
-    return response;
+    const payload = JSON.stringify({
+      creatorId: gameData.creatorId,
+      events: gameData.events,
+      boardSize: gameData.boardSize,
+      votingThreshold: gameData.votingThreshold
+    });
+    const result = await functions.createExecution('createGame', payload);
+    const response = JSON.parse(result.response);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to create game');
+    }
+    return response.game;
   } catch (error) {
     console.error('Error creating game:', error);
     throw error;
@@ -42,17 +47,17 @@ export const createGame = async (gameData) => {
 
 export const joinGame = async (gameId, playerData) => {
   try {
-    const response = await databases.createDocument(
-      BINGO_DATABASE_ID,
-      PLAYERS_COLLECTION_ID,
-      'unique()',
-      {
-        gameId,
-        ...playerData,
-        joinedAt: new Date().toISOString()
-      }
-    );
-    return response;
+    const payload = JSON.stringify({
+      gameId,
+      userId: playerData.userId,
+      username: playerData.username
+    });
+    const result = await functions.createExecution('joinGame', payload);
+    const response = JSON.parse(result.response);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to join game');
+    }
+    return response.game;
   } catch (error) {
     console.error('Error joining game:', error);
     throw error;
