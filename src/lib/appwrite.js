@@ -33,7 +33,7 @@ export const createGame = async (gameData) => {
       boardSize: gameData.boardSize,
       votingThreshold: gameData.votingThreshold
     });
-    const result = await functions.createExecution('createGame', payload);
+    const result = await functions.createExecution('67b74156001710462423', payload);
     const response = JSON.parse(result.response);
     if (!response.success) {
       throw new Error(response.message || 'Failed to create game');
@@ -52,7 +52,7 @@ export const joinGame = async (gameId, playerData) => {
       userId: playerData.userId,
       username: playerData.username
     });
-    const result = await functions.createExecution('joinGame', payload);
+    const result = await functions.createExecution('67b713e9000667794adc', payload);
     const response = JSON.parse(result.response);
     if (!response.success) {
       throw new Error(response.message || 'Failed to join game');

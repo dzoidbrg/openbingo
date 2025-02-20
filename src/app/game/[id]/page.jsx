@@ -20,7 +20,7 @@ export default function GamePage({ params }) {
   const [modalEventIndex, setModalEventIndex] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  // Get current user session
+  // Initialize user session – only after join will the user have permission to read this game document.
   useEffect(() => {
     const initSession = async () => {
       try {
@@ -33,7 +33,7 @@ export default function GamePage({ params }) {
     initSession();
   }, []);
 
-  // Fetch game document and subscribe to realtime updates
+  // Fetch the game document and subscribe to realtime updates.
   useEffect(() => {
     const fetchGame = async () => {
       try {
@@ -53,7 +53,7 @@ export default function GamePage({ params }) {
 
     fetchGame();
 
-    // Subscribe to realtime changes using the subscribeRealtime helper
+    // Realtime subscription – only users with read permissions (joined users) can subscribe.
     const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${params.id}`;
     const unsubscribe = subscribeRealtime(channel, (response) => {
       if (response.payload) {
@@ -64,10 +64,8 @@ export default function GamePage({ params }) {
     return () => unsubscribe();
   }, [params.id]);
 
-  // Determine if the current user is the host (creator)
   const isHost = game && game.creatorId === userId;
 
-  // Handle starting the game (only host)
   const handleStartGame = async () => {
     try {
       await databases.updateDocument(
@@ -81,7 +79,6 @@ export default function GamePage({ params }) {
     }
   };
 
-  // Handle vote for an event index.
   const handleVote = async (eventIndex) => {
     try {
       const payload = JSON.stringify({
@@ -95,7 +92,6 @@ export default function GamePage({ params }) {
     }
   };
 
-  // When a cell is clicked, show a modal with the list of players who have that event ticked.
   const handleShowModal = (eventIndex) => {
     setModalEventIndex(eventIndex);
   };
@@ -104,28 +100,25 @@ export default function GamePage({ params }) {
     setModalEventIndex(null);
   };
 
-  // Basic grid CSS class based on boardSize
   const gridCols = {
     3: 'grid-cols-3',
     4: 'grid-cols-4',
     5: 'grid-cols-5'
   }[game?.boardSize] || 'grid-cols-3';
 
-  // Get players who have marked a given event
   const getPlayersForEvent = (eventIndex) => {
     return (game?.players || []).filter(player =>
       player.ticked && player.ticked.includes(eventIndex)
     );
   };
 
-  // Check if the current player has won using their personal board.
+  // Check for a win using the current user's personal board.
   const checkWinCondition = () => {
     if (!game || !game.boardSize || !game.players) return false;
     const currentPlayer = game.players.find(player => player.userId === userId);
     if (!currentPlayer || !currentPlayer.ticked) return false;
 
     const size = game.boardSize;
-    // Create a board using the player's ticked array
     const board = Array.from({ length: size }, () => Array(size).fill(false));
     currentPlayer.ticked.forEach(index => {
       const row = Math.floor(index / size);
@@ -133,7 +126,6 @@ export default function GamePage({ params }) {
       board[row][col] = true;
     });
 
-    // Check rows, columns, and diagonals
     for (let i = 0; i < size; i++) {
       if (board[i].every(cell => cell)) return true;
     }
@@ -145,13 +137,11 @@ export default function GamePage({ params }) {
     return mainDiagonal || antiDiagonal;
   };
 
-  // When a win is detected, update the game (if not already done) and redirect to the winner page.
   useEffect(() => {
     if (game && userId && game.status === 'started' && checkWinCondition()) {
       const currentPlayer = game.players.find(player => player.userId === userId);
       const winner = currentPlayer ? currentPlayer.username : 'Unknown';
       if (!game.winner) {
-        // Update the game document with the winner's username
         databases.updateDocument(
           BINGO_DATABASE_ID,
           GAMES_COLLECTION_ID,
@@ -159,7 +149,6 @@ export default function GamePage({ params }) {
           { winner }
         ).catch(err => console.error('Error updating winner:', err));
       }
-      // Redirect to the winner page
       window.location.href = `/winner/${game.$id}`;
     }
   }, [game, userId]);
@@ -180,7 +169,6 @@ export default function GamePage({ params }) {
     );
   }
 
-  // Handle share functionality
   const handleShare = async () => {
     const shareUrl = window.location.href;
     try {
@@ -240,7 +228,7 @@ export default function GamePage({ params }) {
         </div>
       )}
 
-      {/* Waiting Room for players (before game start) */}
+      {/* Waiting Room */}
       {game.status === 'waiting' && (
         <div className="mb-4 p-4 border border-dashed border-secondary rounded-md">
           <h2 className="text-2xl font-bold mb-2">Waiting Room</h2>
@@ -264,7 +252,7 @@ export default function GamePage({ params }) {
       {/* Game Board */}
       {game.status === 'started' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left: Personal Bingo Board */}
+          {/* Personal Board */}
           <div>
             <h2 className="text-2xl font-bold mb-4">Your Bingo Board</h2>
             <div className={cn('grid gap-4', gridCols)}>
@@ -285,7 +273,7 @@ export default function GamePage({ params }) {
             </div>
           </div>
 
-          {/* Right: Communal Voting Board */}
+          {/* Communal Board */}
           <div>
             <h2 className="text-2xl font-bold mb-4">Communal Board</h2>
             <div className="space-y-4">
@@ -318,7 +306,7 @@ export default function GamePage({ params }) {
         </div>
       )}
 
-      {/* Modal for showing players who have marked an event */}
+      {/* Modal for event details */}
       {modalEventIndex !== null && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-card p-6 rounded-lg w-80">

@@ -1,4 +1,3 @@
-// voteEventFunction.js
 const sdk = require('node-appwrite');
 
 const client = new sdk.Client();
@@ -11,12 +10,10 @@ const database = new sdk.Database(client);
 
 module.exports = async function (req, res) {
   try {
-    // Parse the JSON payload
     const payload = JSON.parse(req.payload || '{}');
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
-      res.json({ error: 'Missing parameters: gameId, eventIndex, and userId are required.' });
-      return;
+      return res.json({ success: false, message: 'Missing parameters: gameId, eventIndex, and userId are required.' });
     }
 
     // Fetch the game document
@@ -26,38 +23,35 @@ module.exports = async function (req, res) {
       gameId
     );
 
-    // Ensure votes and verifiedEvents arrays exist
+    // Ensure votes is an array and verifiedEvents is an array
     let votes = game.votes || [];
     let verifiedEvents = game.verifiedEvents || [];
 
-    // Initialize vote count for this event if necessary
+    // Initialize vote count for this event if necessary and increment it
     votes[eventIndex] = votes[eventIndex] || 0;
-
-    // Increment the vote count
     votes[eventIndex]++;
 
-    // Determine required votes based on threshold percentage
+    // Determine required votes based on the number of players and voting threshold
     const totalPlayers = (game.players || []).length;
     const requiredVotes = Math.ceil(totalPlayers * game.votingThreshold / 100);
 
-    // If the vote count meets or exceeds the threshold and the event is not yet verified, mark it verified.
+    // If the vote count meets the threshold and the event isn’t already verified, mark it as verified.
     if (votes[eventIndex] >= requiredVotes && !verifiedEvents.includes(eventIndex)) {
       verifiedEvents.push(eventIndex);
-      // Optionally, you might update each player's ticked field here.
-      // For simplicity, we assume clients read from verifiedEvents.
     }
 
-    // Update the game document with new votes and verifiedEvents
     const updatedGame = await database.updateDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
       gameId,
-      { votes, verifiedEvents }
+      { votes, verifiedEvents },
+      game.$read,
+      game.$write
     );
 
-    res.json({ success: true, game: updatedGame });
+    return res.json({ success: true, game: updatedGame });
   } catch (error) {
     console.error('Error in voteEventFunction:', error);
-    res.json({ error: error.message });
+    return res.json({ success: false, message: error.message });
   }
 };

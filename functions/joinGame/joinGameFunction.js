@@ -1,9 +1,8 @@
-// joinGameFunction.js
 const sdk = require('node-appwrite');
 
 const client = new sdk.Client();
 client
-  .setEndpoint(process.env.APPWRITE_ENDPOINT) // e.g. 'https://[HOSTNAME_OR_IP]/v1'
+  .setEndpoint(process.env.APPWRITE_ENDPOINT) // e.g. 'https://cloud.appwrite.io/v1'
   .setProject(process.env.APPWRITE_PROJECT_ID)
   .setKey(process.env.APPWRITE_API_KEY);
 
@@ -11,12 +10,10 @@ const database = new sdk.Database(client);
 
 module.exports = async function (req, res) {
   try {
-    // Parse the JSON payload
     const payload = JSON.parse(req.payload || '{}');
     const { gameId, userId, username } = payload;
     if (!gameId || !userId || !username) {
-      res.json({ error: 'Missing parameters: gameId, userId, username are required.' });
-      return;
+      return res.json({ success: false, message: 'Missing parameters: gameId, userId, and username are required.' });
     }
 
     // Fetch the game document
@@ -26,13 +23,11 @@ module.exports = async function (req, res) {
       gameId
     );
 
-    // Ensure players array exists
     let players = game.players || [];
 
     // Check if the player is already in the game
     if (players.some(player => player.userId === userId)) {
-      res.json({ success: true, message: 'Player already joined.' });
-      return;
+      return res.json({ success: true, message: 'Player already joined.', game });
     }
 
     // Create the new player object
@@ -44,17 +39,26 @@ module.exports = async function (req, res) {
 
     players.push(newPlayer);
 
-    // Update the document (only the players array)
+    // Update read permissions: add the joining user's id if not already present.
+    let currentRead = game.$read || [];
+    const joinPerm = `user:${userId}`;
+    if (!currentRead.includes(joinPerm)) {
+      currentRead.push(joinPerm);
+    }
+
+    // Update the document with new players and updated read permissions.
     const updatedGame = await database.updateDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
       gameId,
-      { players }
+      { players },
+      currentRead, // new read permissions
+      game.$write // keep existing write permissions
     );
 
-    res.json({ success: true, game: updatedGame });
+    return res.json({ success: true, game: updatedGame });
   } catch (error) {
     console.error('Error in joinGameFunction:', error);
-    res.json({ error: error.message });
+    return res.json({ success: false, message: error.message });
   }
 };

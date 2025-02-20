@@ -42,7 +42,7 @@ export default function JoinGame() {
     if (code.length === 4) {
       try {
         const payload = JSON.stringify({ gameCode: code });
-        const result = await functions.createExecution('searchGame', payload);
+        const result = await functions.createExecution('67b741820010d7638006', payload);
         const response = JSON.parse(result.response);
 
         if (response.success) {
@@ -62,7 +62,7 @@ export default function JoinGame() {
     const code = gameCode.join('');
     if (code.length === 4 && userId && username.trim()) {
       try {
-        // First, get the game ID using searchGame function
+        // First, get the game ID using the searchGame function
         const searchPayload = JSON.stringify({ gameCode: code });
         const searchResult = await functions.createExecution('searchGame', searchPayload);
         const searchResponse = JSON.parse(searchResult.response);
@@ -71,13 +71,16 @@ export default function JoinGame() {
           throw new Error('Game not found');
         }
 
-        // Then join the game using joinGame function
+        // Then join the game using joinGame function.
+        // The joinGame cloud function should update the game document's permissions,
+        // adding the current user (userId) to the document's read permissions.
         const joinPayload = JSON.stringify({
           gameId: searchResponse.game.$id,
           userId: userId,
           username: username.trim()
         });
         await functions.createExecution('joinGame', joinPayload);
+        // Redirect to game page (the user now has permission to read this document)
         window.location.href = `/game/${searchResponse.game.$id}`;
       } catch (error) {
         console.error('Error joining game:', error);

@@ -20,6 +20,14 @@ module.exports = async function(req, res) {
     // Generate a random 4-character game code
     const gameCode = Math.random().toString(36).substring(2, 6).toUpperCase();
 
+    // Initialize votes as an array of zeros (one per event)
+    const votes = new Array(events.length).fill(0);
+
+    // Set initial read permissions to include the host
+    const readPermissions = [`user:${creatorId}`];
+    // Optionally, set write permissions (for example, to only allow the host to update)
+    const writePermissions = [`user:${creatorId}`];
+
     const game = await database.createDocument(
       BINGO_DATABASE_ID,
       GAMES_COLLECTION_ID,
@@ -32,9 +40,11 @@ module.exports = async function(req, res) {
         gameCode,
         status: 'waiting',
         players: [],
-        votes: {},
+        votes,
         verifiedEvents: []
-      }
+      },
+      readPermissions,
+      writePermissions
     );
 
     return res.json({

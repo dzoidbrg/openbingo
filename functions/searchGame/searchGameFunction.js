@@ -12,7 +12,6 @@ module.exports = async function(req, res) {
 
   try {
     const { gameCode } = JSON.parse(req.payload);
-
     if (!gameCode) {
       throw new Error('Game code is required');
     }
