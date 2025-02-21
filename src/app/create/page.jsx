@@ -232,14 +232,8 @@ export default function CreateGame() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={events.length === 0}
-              className={cn(
-                "w-full inline-flex items-center justify-center rounded-full",
-                "bg-primary text-primary-foreground",
-                "h-12 px-8 text-lg font-medium",
-                "transition-all duration-300 hover:scale-105 hover:shadow-lg",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              )}
+              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              disabled={events.length === 0 || events.some(event => !event.trim()) || !userId}
             >
               Create Game
             </button>
@@ -268,16 +262,10 @@ export default function CreateGame() {
             {error && <p className="text-red-500">{error}</p>}
             <button
               type="submit"
-              disabled={!username.trim()}
-              className={cn(
-                "w-full inline-flex items-center justify-center rounded-full",
-                "bg-primary text-primary-foreground",
-                "h-12 px-8 text-lg font-medium",
-                "transition-all duration-300 hover:scale-105 hover:shadow-lg",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
+              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              disabled={!username.trim() || !userId}
             >
-              Join Game as Host
+              Join as Host
             </button>
           </form>
         )}

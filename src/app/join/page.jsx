@@ -45,13 +45,13 @@ export default function JoinGame() {
       try {
         const payload = JSON.stringify({ gameCode: code });
         const result = await functions.createExecution('67b741820010d7638006', payload);
-        const response = JSON.parse(result.response);
-
-        if (response.success) {
+        const response = null
+        console.log(result.completed);
+        if (result.status === "completed") {
           setStep('username');
           setError('');
         } else {
-          setError(response.message || 'Game not found. Please check the code.');
+          setError(response.error || 'Game not found. Please check the code.');
         }
       } catch (error) {
         console.error('Error verifying game:', error);
@@ -133,7 +133,14 @@ export default function JoinGame() {
             className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             disabled={gameCode.join('').length !== 4 || !userId || isLoading}
           >
-            {isLoading ? 'Loading...' : 'Next'}
+            {isLoading ? (
+              <div
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              >
+                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+              </div>
+            ) : 'Next'}
           </button>
         </>
       ) : (
@@ -159,7 +166,14 @@ export default function JoinGame() {
             className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             disabled={!username.trim() || !userId || isLoading}
           >
-            {isLoading ? 'Loading...' : 'Join Game'}
+            {isLoading ? (
+              <div
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              >
+                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+              </div>
+            ) : 'Join Game'}
           </button>
         </>
       )}
