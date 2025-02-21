@@ -21,6 +21,8 @@ export default function GamePage() {
   const [error, setError] = useState(null);
   const [modalEventIndex, setModalEventIndex] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showGameCode, setShowGameCode] = useState(true);
+  const [showExpandedCode, setShowExpandedCode] = useState(false);
 
   useEffect(() => {
     const initSession = async () => {
@@ -29,15 +31,12 @@ export default function GamePage() {
         setUserId(session.id);
       } catch (err) {
         console.error('Error initializing session:', err);
+        setError('Failed to initialize session');
       }
     };
     initSession();
-  }, []);
 
-  // Fetch the game document and subscribe to realtime updates.
-  useEffect(() => {
-    if (!gameId) return;
-
+    // Fetch initial game data
     const fetchGame = async () => {
       try {
         const gameData = await databases.getDocument(
@@ -48,31 +47,29 @@ export default function GamePage() {
         setGame(gameData);
         setLoading(false);
       } catch (err) {
-        setError('Failed to load game');
         console.error('Error fetching game:', err);
+        setError('Game not found');
         setLoading(false);
       }
     };
-
     fetchGame();
 
-    // Realtime subscription for game updates and player joins
-    const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${gameId}`;
-    const unsubscribe = subscribeRealtime(channel, (response) => {
-      if (response.payload) {
-        setGame(response.payload);
-        // Log new player joins
-        const currentPlayers = game?.players || [];
-        const newPlayers = response.payload.players || [];
-        if (newPlayers.length > currentPlayers.length) {
-          const latestPlayer = newPlayers[newPlayers.length - 1];
-          console.log(`New player joined: ${JSON.parse(latestPlayer).username}`);
+    // Set up real-time subscription
+    const unsubscribe = subscribeRealtime(
+      `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${gameId}`,
+      (response) => {
+        if (response.events.includes('databases.*.collections.*.documents.*.update')) {
+          setGame(response.payload);
         }
       }
-    });
+    );
 
-    return () => unsubscribe();
-  }, [gameId]);
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [gameId]); // Add gameId as dependency
 
   const isHost = game && game.creatorId === userId;
 
@@ -198,8 +195,49 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen p-4">
-      {/* Share button */}
-      <div className="flex justify-end mb-4">
+      {/* Top Bar */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Game Code:</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-medium text-lg">
+              {showGameCode ? (game?.gameCode || 'N/A') : '****'}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowGameCode(!showGameCode)}
+                className="p-1 hover:bg-secondary/20 rounded-full transition-colors"
+                title={showGameCode ? "Hide Code" : "Show Code"}
+              >
+                {showGameCode ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                    <line x1="2" x2="22" y1="2" y2="22" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={() => setShowExpandedCode(true)}
+                className="p-1 hover:bg-secondary/20 rounded-full transition-colors"
+                title="Expand Code"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h6v6" />
+                  <path d="M9 21H3v-6" />
+                  <path d="M21 3l-7 7" />
+                  <path d="M3 21l7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
         <button
           onClick={() => setShowShareModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
@@ -208,6 +246,38 @@ export default function GamePage() {
           Share Game
         </button>
       </div>
+
+      {/* Expanded Code Modal */}
+      {showExpandedCode && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowExpandedCode(false);
+            }
+          }}
+        >
+          <div className="bg-card p-8 rounded-lg shadow-xl w-96 max-w-[90vw]">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold">Game Code</h3>
+              <button
+                onClick={() => setShowExpandedCode(false)}
+                className="p-2 hover:bg-secondary/20 rounded-full transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="bg-background/50 p-6 rounded-lg border-2 border-secondary">
+              <span className="font-mono text-4xl tracking-wider">
+                {game?.gameCode || 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       {showShareModal && (
@@ -249,7 +319,9 @@ export default function GamePage() {
                 const player = typeof playerString === 'string' ? JSON.parse(playerString) : playerString;
                 return (
                   <li key={idx} className="py-1 flex items-center gap-2">
-                    {player.username}
+                    <span className={player.userId === userId ? 'font-bold' : ''}>
+                      {player.username}
+                    </span>
                     {player.userId === game.creatorId && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
                         HOST
