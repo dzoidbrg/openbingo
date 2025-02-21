@@ -68,16 +68,21 @@ export default async ({ req, res, log, error }) => {
 
 
     try {
+      // Get existing permissions first
+      const existingDoc = await database.getDocument(
+        process.env.BINGO_DATABASE_ID,
+        process.env.GAMES_COLLECTION_ID,
+        gameId
+      );
+
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,
         process.env.GAMES_COLLECTION_ID,
         gameId,
         {
-          players},
-        [
-          Permission.read(Role.user(userId))
-        ]
-        
+          players
+        },
+        [...existingDoc.$permissions, Permission.read(Role.user(userId))]
       );
 
       console.log("Updated game document:", updatedGame);
