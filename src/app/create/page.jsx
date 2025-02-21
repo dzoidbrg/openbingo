@@ -4,6 +4,11 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { account, createGame, getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
 
+const FUNCTION_IDS = {
+  CREATE_GAME: '67b74156001710462423',
+  JOIN_GAME: '67b713e9000667794adc'
+};
+
 export default function CreateGame() {
   const [boardSize, setBoardSize] = useState(3);
   const [events, setEvents] = useState([]);
@@ -83,18 +88,30 @@ export default function CreateGame() {
       // players: [] (empty at first)
       // votes: an array of zeros (one for each event)
       // verifiedEvents: [] (none verified yet)
-      const game = await createGame({
+      const payload = {
         creatorId: userId,
         boardSize: boardSize,
         events: events,
-        status: 'waiting', // waiting for players and for host to start
-        gameCode: formattedGameCode,
         votingThreshold: parseInt(document.getElementById('threshold').value, 10) || 50,
-        players: [],  // new attribute: list of players (each will be an object)
-        votes: new Array(events.length).fill(0),
-        verifiedEvents: []
-      });
-      setCreatedGame(game);
+        gameCode: formattedGameCode
+      };
+
+      const response = await functions.createExecution(
+        FUNCTION_IDS.CREATE_GAME,
+        JSON.stringify(payload)
+      );
+
+      if (!response || !response.response) {
+        throw new Error('Invalid response from server');
+      }
+
+      const result = JSON.parse(response.response);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create game');
+      }
+
+      setCreatedGame(result.game);
       // move to the next step: ask for host username
       setStep('username');
     } catch (error) {
@@ -103,7 +120,7 @@ export default function CreateGame() {
     }
   };
 
-  // Step 2: Host enters username and we call the cloud function to add them to the game’s players array
+  // Step 2: Host enters username and we call the cloud function to add them to the game's players array
   const handleJoinAsHost = async (e) => {
     e.preventDefault();
     setError('');
@@ -116,14 +133,28 @@ export default function CreateGame() {
       return;
     }
     try {
-      // Call your secure cloud function "joinGame" to add the host as a player.
-      // (Assuming your Appwrite functions client is set up and the function ID is "joinGame")
-      const payload = JSON.stringify({
+      const joinPayload = {
         gameId: createdGame.$id,
         userId,
         username: username.trim()
-      });
-      await functions.createExecution('67b713e9000667794adc', payload);
+      };
+
+      const response = await functions.createExecution(
+        FUNCTION_IDS.JOIN_GAME,
+        JSON.stringify(joinPayload)
+      );
+
+      if (!response || !response.response) {
+        console.error('Invalid response from server:', response);
+        throw new Error('Invalid response from server');
+      }
+
+      const result = JSON.parse(response.response);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to join game');
+      }
+
       // After joining, redirect to game page
       window.location.href = `/game/${createdGame.$id}`;
     } catch (error) {
@@ -170,7 +201,7 @@ export default function CreateGame() {
                 <div className="relative group">
                   <div className="cursor-help text-muted-foreground">ⓘ</div>
                   <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
-                    The percentage of players that need to vote for an event before it’s marked as completed on the bingo board.
+                    The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
                   </div>
                 </div>
               </div>
