@@ -9,10 +9,6 @@ client
 const database = new sdk.Databases(client);
 
 module.exports = async function (req, res) {
-  const response = {
-    json: (data) => data
-  };
-
   try {
     console.log("Received request:", req);
 
@@ -22,7 +18,7 @@ module.exports = async function (req, res) {
 
     const { creatorId, boardSize, events, votingThreshold } = payload;
     if (!creatorId || !boardSize || !events || !votingThreshold) {
-      return response.json({
+      return res.json({
         success: false,
         error: "Missing required fields: creatorId, boardSize, events, votingThreshold."
       });
@@ -50,11 +46,11 @@ module.exports = async function (req, res) {
     );
 
     console.log("Created game document:", game);
-    return response.json({ success: true, game });
+    return res.json({ success: true, game });
 
   } catch (error) {
     console.error("Error in createGameFunction:", error);
-    return response.json({
+    return res.json({
       success: false,
       error: error.message || "An unexpected error occurred while creating the game"
     });

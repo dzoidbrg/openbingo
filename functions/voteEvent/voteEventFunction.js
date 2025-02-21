@@ -9,10 +9,6 @@ client
 const database = new sdk.Databases(client);
 
 module.exports = async function (req, res) {
-  const response = {
-    json: (data) => data
-  };
-
   try {
     console.log("Received request:", req);
 
@@ -22,7 +18,7 @@ module.exports = async function (req, res) {
 
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
-      return response.json({
+      return res.json({
         success: false,
         error: 'Missing parameters: gameId, eventIndex, and userId are required.'
       });
@@ -30,7 +26,7 @@ module.exports = async function (req, res) {
 
     // Validate eventIndex is a number
     if (typeof eventIndex !== 'number' || eventIndex < 0) {
-      return response.json({
+      return res.json({
         success: false,
         error: 'eventIndex must be a non-negative number.'
       });
@@ -44,7 +40,7 @@ module.exports = async function (req, res) {
     );
 
     if (!game) {
-      return response.json({
+      return res.json({
         success: false,
         error: 'Game not found.'
       });
@@ -52,7 +48,7 @@ module.exports = async function (req, res) {
 
     // Validate the player is in the game
     if (!game.players?.some(player => player.userId === userId)) {
-      return response.json({
+      return res.json({
         success: false,
         error: 'User is not a participant in this game.'
       });
@@ -60,7 +56,7 @@ module.exports = async function (req, res) {
 
     // Validate eventIndex is within bounds
     if (eventIndex >= game.events?.length) {
-      return response.json({
+      return res.json({
         success: false,
         error: 'Invalid event index.'
       });
@@ -97,10 +93,10 @@ module.exports = async function (req, res) {
       );
 
       console.log("Updated game document:", updatedGame);
-      return response.json({ success: true, game: updatedGame });
+      return res.json({ success: true, game: updatedGame });
     } catch (updateError) {
       if (updateError.code === 409) {
-        return response.json({
+        return res.json({
           success: false,
           error: 'Game was modified by another player. Please try again.'
         });
@@ -110,7 +106,7 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in voteEventFunction:", error);
-    return response.json({
+    return res.json({
       success: false,
       error: error.message || "Unknown error occurred"
     });
