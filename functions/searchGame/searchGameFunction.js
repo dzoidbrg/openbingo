@@ -13,11 +13,10 @@ export default async ({ req, res, log, error }) => {
     try {
     console.log("Received request:", req);
 
-    const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
+    const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
     console.log("Parsed payload:", payload);
 
     const { gameCode } = payload;
-    console.log(gameCode)
     if (!gameCode || String(gameCode).length !== 4) {
       return res.json({
         success: false,
