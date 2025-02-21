@@ -46,7 +46,7 @@ export default function JoinGame() {
       try {
         const payload = JSON.stringify({ gameCode: code });
         const result = await functions.createExecution('67b741820010d7638006', payload);
-        const response = JSON.parse(result.response);
+        const response = JSON.parse(result.responseBody);
         
         if (response.success && response.game) {
           setStep('username');
@@ -70,8 +70,9 @@ export default function JoinGame() {
       try {
         const searchPayload = JSON.stringify({ gameCode: code });
         const searchResult = await functions.createExecution('67b741820010d7638006', searchPayload);
-        const searchResponse = JSON.parse(searchResult.response);
-upd        
+
+        const searchResponse = JSON.parse(searchResult.responseBody);
+        console.log(searchResponse)
         if (!searchResponse.success || !searchResponse.game) {
           setError(searchResponse.error || 'Game not found');
           return;
