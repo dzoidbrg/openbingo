@@ -65,16 +65,7 @@ export default async ({ req, res, log, error }) => {
     const newPlayerString = JSON.stringify(newPlayerObj);
     players.push(newPlayerString);
 
-    // Retrieve current permissions from the game document, if any
-    const currentPermissions = game.$permissions || [];
 
-    // Check if the new permission is already set to avoid duplicates
-    const newPermission = Permission.read(Role.user(userId));
-    const hasPermission = currentPermissions.some(perm => perm === newPermission);
-    const updatedPermissions = hasPermission ? currentPermissions : [
-      ...currentPermissions,
-      newPermission
-    ];
 
     try {
       const updatedGame = await database.updateDocument(
@@ -82,9 +73,11 @@ export default async ({ req, res, log, error }) => {
         process.env.GAMES_COLLECTION_ID,
         gameId,
         {
-          players,
-          $permissions: updatedPermissions
-        }
+          players},
+        [
+          Permission.read(Role.user(userId))
+        ]
+        
       );
 
       console.log("Updated game document:", updatedGame);
