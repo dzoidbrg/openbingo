@@ -1,14 +1,14 @@
-const sdk = require('node-appwrite');
+import { Client, Databases } from 'node-appwrite';
 
-const client = new sdk.Client();
-client
-  .setEndpoint(process.env.APPWRITE_ENDPOINT) 
-  .setProject(process.env.APPWRITE_PROJECT_ID)
-  .setKey(process.env.APPWRITE_API_KEY);
 
-const database = new sdk.Databases(client);
+export default async ({ req, res, log, error }) => {
+  const client = new Client();
+  client
+    .setEndpoint(process.env.APPWRITE_ENDPOINT) 
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
 
-module.exports = async function (req, res) {
+  const database = new Databases(client);
   try {
     console.log("Received request:", req);
 

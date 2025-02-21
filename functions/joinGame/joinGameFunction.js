@@ -13,7 +13,6 @@ client
   try {
     console.log("Received request:", req); 
 
-    // Extract payload safely from the nested request structure
     const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
     console.log("Parsed payload:", payload);
 
