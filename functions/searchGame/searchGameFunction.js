@@ -10,6 +10,10 @@ const database = new sdk.Databases(client);
 const Query = sdk.Query;
 
 module.exports = async function (req, res) {
+  const response = {
+    json: (data) => data
+  };
+
   try {
     console.log("Received request:", req);
 
@@ -19,7 +23,7 @@ module.exports = async function (req, res) {
 
     const { gameCode } = payload;
     if (!gameCode || typeof gameCode !== 'string') {
-      return res.json({
+      return response.json({
         success: false,
         error: "Missing or invalid gameCode. Must be a string."
       });
@@ -36,7 +40,7 @@ module.exports = async function (req, res) {
     );
 
     if (!result || result.total === 0) {
-      return res.json({
+      return response.json({
         success: false,
         error: "Game not found with the provided code."
       });
@@ -45,7 +49,7 @@ module.exports = async function (req, res) {
     const game = result.documents[0];
     console.log("Found game document:", game);
     
-    return res.json({
+    return response.json({
       success: true,
       game: {
         ...game,
@@ -55,7 +59,7 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in searchGameFunction:", error);
-    return res.json({
+    return response.json({
       success: false,
       error: error.message || "An unexpected error occurred while searching for the game"
     });
