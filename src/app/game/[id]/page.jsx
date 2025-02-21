@@ -23,6 +23,7 @@ export default function GamePage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showGameCode, setShowGameCode] = useState(true);
   const [showExpandedCode, setShowExpandedCode] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('Copy Link');
 
   useEffect(() => {
     const initSession = async () => {
@@ -198,24 +199,20 @@ export default function GamePage() {
   }
 
   const handleShare = async () => {
-    const shareUrl = window.location.href;
+    const joinUrl = `${window.location.origin}/join?code=${game.gameCode}`;
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert('Game link copied to clipboard!');
+      await navigator.clipboard.writeText(joinUrl);
+      setCopyStatus('Copied!');
+      setTimeout(() => setCopyStatus('Copy Link'), 2000);
     } catch (err) {
       console.error('Error copying to clipboard:', err);
+      setCopyStatus('Failed to copy');
+      setTimeout(() => setCopyStatus('Copy Link'), 2000);
     }
   };
 
-  const handleEmailShare = () => {
-    const shareUrl = window.location.href;
-    const subject = encodeURIComponent('Join my Bingo game!');
-    const body = encodeURIComponent(`Join my Bingo game at: ${shareUrl}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
-
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4" suppressHydrationWarning>
       {/* Top Bar */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
@@ -318,13 +315,14 @@ export default function GamePage() {
                 onClick={handleShare}
                 className="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
               >
-                Copy Link
+                {copyStatus}
               </button>
               <button
-                onClick={handleEmailShare}
-                className="w-full px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
+                disabled
+                className="w-full px-4 py-2 bg-secondary/50 text-secondary-foreground/50 rounded cursor-not-allowed flex items-center justify-center gap-2 relative"
               >
-                Share via Email
+                <span className="line-through">Share via Email</span>
+                <span className="text-xs bg-secondary-foreground/10 px-2 py-0.5 rounded absolute -right-1 -top-1">Soon</span>
               </button>
             </div>
             <button

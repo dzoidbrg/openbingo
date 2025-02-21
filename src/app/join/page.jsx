@@ -4,8 +4,10 @@ import { cn } from "@/lib/utils";
 import { useRef, useState, useEffect } from 'react';
 import { account, getOrCreateAnonymousSession, databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, functions } from '@/lib/appwrite';
 import { Query } from 'appwrite';
+import { useSearchParams } from 'next/navigation';
 
 export default function JoinGame() {
+  const searchParams = useSearchParams();
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [gameCode, setGameCode] = useState(['', '', '', '']);
   const [userId, setUserId] = useState(null);
@@ -32,6 +34,15 @@ export default function JoinGame() {
     };
     initSession();
   }, []);
+
+  // Handle URL parameter for game code
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code && code.length === 4) {
+      const codeArray = code.split('');
+      setGameCode(codeArray);
+    }
+  }, [searchParams]);
 
   const handleInput = (index, value) => {
     const newGameCode = [...gameCode];
