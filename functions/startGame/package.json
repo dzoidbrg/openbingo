@@ -1,0 +1,9 @@
+{
+  "name": "start-game-function",
+  "version": "1.0.0",
+  "description": "Cloud function to start a bingo game",
+  "main": "startGameFunction.js",
+  "dependencies": {
+    "node-appwrite": "^11.0.0"
+  }
+}

@@ -46,6 +46,14 @@ module.exports = async function (req, res) {
       });
     }
 
+    // Validate game is in started status
+    if (game.status !== 'started') {
+      return res.json({
+        success: false,
+        error: 'Game must be started to vote.'
+      });
+    }
+
     // Validate the player is in the game
     if (!game.players?.some(player => player.userId === userId)) {
       return res.json({
