@@ -46,11 +46,7 @@ module.exports = async function (req, res) {
     console.log("Found game document:", game);
     
     return res.json({
-      success: true,
-      game: {
-        ...game,
-        gameCode: game.gameCode
-      }
+      success: true
     });
 
   } catch (error) {
