@@ -19,9 +19,15 @@ export default function JoinGame() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.id);
+        if (session && session.$id) {
+          setUserId(session.$id);
+        } else {
+          console.error('Invalid session response');
+          setError('Failed to initialize session');
+        }
       } catch (error) {
         console.error('Error initializing session:', error);
+        setError('Failed to initialize session');
       }
     };
     initSession();
@@ -106,7 +112,7 @@ export default function JoinGame() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4" suppressHydrationWarning>
       <h1 className="text-4xl font-bold tracking-tighter mb-2 text-[#FFD700] block">Join the fun!</h1>
       <div className={cn(
         "transition-all duration-300 ease-in-out",

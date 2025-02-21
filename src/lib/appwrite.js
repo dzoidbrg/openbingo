@@ -112,7 +112,7 @@ export const getGamePlayers = async (gameId) => {
 // Helper function to get or create anonymous session
 export const getOrCreateAnonymousSession = async () => {
   try {
-    const currentSession = await account.getSession('current');
+    const currentSession = await account.get();
     return currentSession;
   } catch (error) {
     try {

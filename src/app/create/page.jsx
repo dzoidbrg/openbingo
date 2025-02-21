@@ -22,9 +22,15 @@ export default function CreateGame() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.id);
+        if (session && session.$id) {
+          setUserId(session.$id);
+        } else {
+          console.error('Invalid session response');
+          setError('Session not initialized. Please try again.');
+        }
       } catch (error) {
         console.error('Error initializing session:', error);
+        setError('Session not initialized. Please try again.');
       }
     };
     initSession();
