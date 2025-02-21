@@ -1,4 +1,4 @@
-import { Client, Database, Query } from 'node-appwrite';
+import { Client, Databases, Query } from 'node-appwrite';
 
 
 export default async ({ req, res, log, error }) => {
@@ -8,7 +8,7 @@ export default async ({ req, res, log, error }) => {
     .setEndpoint(process.env.APPWRITE_ENDPOINT) 
     .setProject(process.env.APPWRITE_PROJECT_ID)
     .setKey(process.env.APPWRITE_API_KEY);
-  const database = new Database(client);
+  const database = new Databases(client);
 
     try {
     console.log("Received request:", req);
