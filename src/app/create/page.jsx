@@ -101,14 +101,21 @@ export default function CreateGame() {
         JSON.stringify(payload)
       );
 
-      if (!response || !response.response) {
+      console.log('Create game response:', response);
+
+      if (!response) {
         throw new Error('Invalid response from server');
       }
 
-      const result = JSON.parse(response.response);
+      const result = response.responseBody;
+      console.log('Create game result:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to create game');
+      }
+
+      if (!result.game || !result.game.$id) {
+        throw new Error('Invalid game data received');
       }
 
       setCreatedGame(result.game);
@@ -124,42 +131,61 @@ export default function CreateGame() {
   const handleJoinAsHost = async (e) => {
     e.preventDefault();
     setError('');
-    if (!username.trim()) {
+    
+    // Validate username
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
       setError('Please enter a valid username.');
       return;
     }
-    if (!createdGame) {
+
+    // Validate game and user
+    if (!createdGame || !createdGame.$id) {
       setError('Game not found. Please try again.');
       return;
     }
+    if (!userId) {
+      setError('Session not initialized. Please try again.');
+      return;
+    }
+
     try {
       const joinPayload = {
         gameId: createdGame.$id,
-        userId,
-        username: username.trim()
+        userId: userId,
+        username: trimmedUsername
       };
+
+      console.log('Join game payload:', joinPayload);
 
       const response = await functions.createExecution(
         FUNCTION_IDS.JOIN_GAME,
         JSON.stringify(joinPayload)
       );
 
-      if (!response || !response.response) {
+      console.log('Join game response:', response);
+
+      if (!response) {
         console.error('Invalid response from server:', response);
         throw new Error('Invalid response from server');
       }
 
-      const result = JSON.parse(response.response);
+      const result = response;
+      console.log('Join game result:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to join game');
       }
 
-      // After joining, redirect to game page
+      if (result.message === 'Player already joined.') {
+        console.log('Player already joined, proceeding to game page');
+      }
+
+      // After successful join, redirect to game page
       window.location.href = `/game/${createdGame.$id}`;
     } catch (error) {
       console.error('Error joining game as host:', error);
-      setError('Failed to join game as host. Please try again.');
+      setError(error.message || 'Failed to join game as host. Please try again.');
     }
   };
 
