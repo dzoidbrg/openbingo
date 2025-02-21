@@ -42,7 +42,7 @@ export default async ({ req, res, log, error }) => {
         players: [], // Initially empty
         votes: new Array(events.length).fill(0), // Initialize votes array
         verifiedEvents: [], // Empty at start
-        isHost: creatorId // Set the host to the creator
+        host: creatorId // Set the host to the creator
       }
     );
 

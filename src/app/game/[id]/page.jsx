@@ -244,9 +244,15 @@ export default function GamePage() {
           <h2 className="text-2xl font-bold mb-2">Waiting Room</h2>
           <p className="mb-2">Players joined:</p>
           <ul className="mb-4">
-            {(game.players || []).map((player, idx) => (
-              <li key={idx}>{player.username}</li>
-            ))}
+            {(game.players || []).map((playerString, idx) => {
+              try {
+                const player = typeof playerString === 'string' ? JSON.parse(playerString) : playerString;
+                return <li key={idx} className="py-1">{player.username}</li>;
+              } catch (e) {
+                console.error('Error parsing player data:', e);
+                return null;
+              }
+            })}
           </ul>
           {isHost && (
             <button
