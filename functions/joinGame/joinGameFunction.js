@@ -1,4 +1,4 @@
-import { Client, Databases } from 'node-appwrite';
+import { Client, Databases, Permission, Role } from 'node-appwrite';
 
 
 export default async ({ req, res, log, error }) => {
@@ -13,7 +13,7 @@ client
   try {
     console.log("Received request:", req); 
 
-    const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
+    const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
     console.log("Parsed payload:", payload);
 
     const { gameId, userId, username } = payload;
@@ -56,7 +56,12 @@ client
         process.env.BINGO_DATABASE_ID,
         process.env.GAMES_COLLECTION_ID,
         gameId,
-        { players }
+        { 
+          players,
+          $permissions: [
+            Permission.read(Role.user(userId))
+          ]
+        }
       );
 
       console.log("Updated game document:", updatedGame);
