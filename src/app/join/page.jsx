@@ -44,10 +44,10 @@ export default function JoinGame() {
       setIsLoading(true);
       try {
         const payload = JSON.stringify({ gameCode: code });
-        const result = await functions.createExecution('67b741820010d7638006', payload);
-        const response = null
-        console.log(result.completed);
-        if (result.status === "completed") {
+        const result = await functions.createExecution('searchGame', payload);
+        const response = JSON.parse(result.response);
+        
+        if (response.success) {
           setStep('username');
           setError('');
         } else {
@@ -72,7 +72,8 @@ export default function JoinGame() {
         const searchResponse = JSON.parse(searchResult.response);
 
         if (!searchResponse.success) {
-          throw new Error('Game not found');
+          setError(searchResponse.error || 'Game not found');
+          return;
         }
 
         const joinPayload = JSON.stringify({
@@ -80,11 +81,19 @@ export default function JoinGame() {
           userId: userId,
           username: username.trim()
         });
-        await functions.createExecution('joinGame', joinPayload);
+        const joinResult = await functions.createExecution('joinGame', joinPayload);
+        const joinResponse = JSON.parse(joinResult.response);
+
+        if (!joinResponse.success) {
+          setError(joinResponse.error || 'Failed to join game');
+          return;
+        }
+
         window.location.href = `/game/${searchResponse.game.$id}`;
       } catch (error) {
         console.error('Error joining game:', error);
         setError('Failed to join game. Please try again.');
+      } finally {
         setIsLoading(false);
       }
     }

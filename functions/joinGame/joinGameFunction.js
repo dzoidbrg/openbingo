@@ -9,6 +9,12 @@ client
 const database = new sdk.Databases(client);
 
 module.exports = async function (req, res) {
+  const response = {
+    json: function(data) {
+      return data;
+    }
+  };
+
   try {
     console.log("Received request:", req); 
 
@@ -18,7 +24,7 @@ module.exports = async function (req, res) {
 
     const { gameId, userId, username } = payload;
     if (!gameId || !userId || !username || typeof username !== 'string') {
-      return res.json({
+      return response.json({
         success: false,
         error: 'Missing or invalid parameters. gameId, userId, and username (string) are required.'
       });
@@ -32,7 +38,7 @@ module.exports = async function (req, res) {
     );
 
     if (!game) {
-      return res.json({
+      return response.json({
         success: false,
         error: 'Game not found.'
       });
@@ -44,7 +50,7 @@ module.exports = async function (req, res) {
 
     // Check if the player is already in the game
     if (players.some(player => player.userId === userId)) {
-      return res.json({ success: true, message: 'Player already joined.' });
+      return response.json({ success: true, message: 'Player already joined.' });
     }
 
     // Add the player with sanitized username
@@ -64,10 +70,10 @@ module.exports = async function (req, res) {
       );
 
       console.log("Updated game document:", updatedGame);
-      return res.json({ success: true, game: updatedGame });
+      return response.json({ success: true, game: updatedGame });
     } catch (updateError) {
       if (updateError.code === 409) {
-        return res.json({
+        return response.json({
           success: false,
           error: 'Game was modified by another player. Please try again.'
         });
@@ -77,7 +83,7 @@ module.exports = async function (req, res) {
 
   } catch (error) {
     console.error("Error in joinGameFunction:", error);
-    return res.json({
+    return response.json({
       success: false,
       error: error.message || "Unknown error occurred"
     });
