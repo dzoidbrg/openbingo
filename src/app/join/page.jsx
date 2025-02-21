@@ -44,7 +44,7 @@ export default function JoinGame() {
       setIsLoading(true);
       try {
         const payload = JSON.stringify({ gameCode: code });
-        const result = await functions.createExecution('searchGame', payload);
+        const result = await functions.createExecution('67b741820010d7638006', payload);
         const response = JSON.parse(result.response);
         
         if (response.success) {
@@ -68,7 +68,7 @@ export default function JoinGame() {
       setIsLoading(true);
       try {
         const searchPayload = JSON.stringify({ gameCode: code });
-        const searchResult = await functions.createExecution('searchGame', searchPayload);
+        const searchResult = await functions.createExecution('67b741820010d7638006', searchPayload);
         const searchResponse = JSON.parse(searchResult.response);
 
         if (!searchResponse.success) {
@@ -81,7 +81,7 @@ export default function JoinGame() {
           userId: userId,
           username: username.trim()
         });
-        const joinResult = await functions.createExecution('joinGame', joinPayload);
+        const joinResult = await functions.createExecution('67b713e9000667794adc', joinPayload);
         const joinResponse = JSON.parse(joinResult.response);
 
         if (!joinResponse.success) {
