@@ -1,4 +1,4 @@
-import { Client, Databases } from 'node-appwrite';
+import { Client, Databases, ID } from 'node-appwrite';
 
 
 export default async ({ req, res, log, error }) => {
@@ -31,7 +31,7 @@ export default async ({ req, res, log, error }) => {
     const game = await database.createDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
-      sdk.ID.unique(),
+      ID.unique(),
       {
         creatorId,
         boardSize,
