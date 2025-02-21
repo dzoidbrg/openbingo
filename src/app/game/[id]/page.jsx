@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   databases,
@@ -12,7 +13,8 @@ import {
 } from '@/lib/appwrite';
 import { Share2 } from 'lucide-react';
 
-export default function GamePage({ params }) {
+export default function GamePage() {
+  const { id: gameId } = useParams(); // Get dynamic id from router
   const [game, setGame] = useState(null);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,6 @@ export default function GamePage({ params }) {
   const [modalEventIndex, setModalEventIndex] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  // Initialize user session – only after join will the user have permission to read this game document.
   useEffect(() => {
     const initSession = async () => {
       try {
@@ -35,12 +36,14 @@ export default function GamePage({ params }) {
 
   // Fetch the game document and subscribe to realtime updates.
   useEffect(() => {
+    if (!gameId) return;
+
     const fetchGame = async () => {
       try {
         const gameData = await databases.getDocument(
           BINGO_DATABASE_ID,
           GAMES_COLLECTION_ID,
-          params.id
+          gameId
         );
         setGame(gameData);
         setLoading(false);
@@ -54,7 +57,7 @@ export default function GamePage({ params }) {
     fetchGame();
 
     // Realtime subscription – only users with read permissions (joined users) can subscribe.
-    const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${params.id}`;
+    const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${gameId}`;
     const unsubscribe = subscribeRealtime(channel, (response) => {
       if (response.payload) {
         setGame(response.payload);
@@ -62,7 +65,7 @@ export default function GamePage({ params }) {
     });
 
     return () => unsubscribe();
-  }, [params.id]);
+  }, [gameId]);
 
   const isHost = game && game.creatorId === userId;
 
