@@ -107,11 +107,11 @@ export default function CreateGame() {
         throw new Error('Invalid response from server');
       }
 
-      const result = response.responseBody;
+      const result = JSON.parse(response.responseBody);
       console.log('Create game result:', result);
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create game');
+      if (result.success === false) {
+        throw new Error(result.error || 'Failed to create game. success is false');
       }
 
       if (!result.game || !result.game.$id) {
@@ -170,7 +170,7 @@ export default function CreateGame() {
         throw new Error('Invalid response from server');
       }
 
-      const result = response;
+      const result = JSON.parse(response.responseBody);
       console.log('Join game result:', result);
       
       if (!result.success) {
