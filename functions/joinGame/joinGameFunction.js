@@ -45,11 +45,12 @@ client
       return res.json({ success: true, message: 'Player already joined.' });
     }
 
-    players.push({
+    const newPlayer = JSON.stringify({
       userId,
       username: username.trim(),
       ticked: []
     });
+    players.push(JSON.parse(newPlayer));
 
     try {
       const updatedGame = await database.updateDocument(
