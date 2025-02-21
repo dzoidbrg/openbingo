@@ -247,7 +247,16 @@ export default function GamePage() {
             {(game.players || []).map((playerString, idx) => {
               try {
                 const player = typeof playerString === 'string' ? JSON.parse(playerString) : playerString;
-                return <li key={idx} className="py-1">{player.username}</li>;
+                return (
+                  <li key={idx} className="py-1 flex items-center gap-2">
+                    {player.username}
+                    {player.userId === game.creatorId && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
+                        HOST
+                      </span>
+                    )}
+                  </li>
+                );
               } catch (e) {
                 console.error('Error parsing player data:', e);
                 return null;
