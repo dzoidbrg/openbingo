@@ -1,17 +1,16 @@
 import { Client, Databases, Permission, Role } from 'node-appwrite';
 
-
 export default async ({ req, res, log, error }) => {
   const client = new Client();
-client
-  .setEndpoint(process.env.APPWRITE_ENDPOINT) 
-  .setProject(process.env.APPWRITE_PROJECT_ID)
-  .setKey(process.env.APPWRITE_API_KEY);
+  client
+    .setEndpoint(process.env.APPWRITE_ENDPOINT)
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
 
   const database = new Databases(client);
 
   try {
-    console.log("Received request:", req); 
+    console.log("Received request:", req);
 
     const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
     console.log("Parsed payload:", payload);
@@ -38,26 +37,39 @@ client
     }
 
     console.log("Fetched game data:", game);
-    
+
+    // Assume players is an array of JSON strings
     let players = game.players || [];
 
-    if (players.some(player => player.userId === userId)) {
+    // Parse existing players to check for duplicates
+    const parsedPlayers = players.map(playerString => {
+      try {
+        return JSON.parse(playerString);
+      } catch (e) {
+        // In case it's already an object or malformed, return as-is.
+        return playerString;
+      }
+    });
+
+    if (parsedPlayers.some(player => player && player.userId === userId)) {
       return res.json({ success: true, message: 'Player already joined.' });
     }
 
-    const newPlayer = JSON.stringify({
+    // Create new player object and stringify it for storage
+    const newPlayerObj = {
       userId,
       username: username.trim(),
       ticked: []
-    });
-    players.push(JSON.parse(newPlayer));
+    };
+    const newPlayerString = JSON.stringify(newPlayerObj);
+    players.push(newPlayerString);
 
     try {
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,
         process.env.GAMES_COLLECTION_ID,
         gameId,
-        { 
+        {
           players,
           $permissions: [
             Permission.read(Role.user(userId))
