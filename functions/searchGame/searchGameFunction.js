@@ -40,7 +40,11 @@ export default async ({ req, res, log, error }) => {
     const game = result.documents[0];
     console.log("Found game document:", game);
     
-    return res.text('Game found', 200);
+    return res.json({
+      success: true,
+      message: "Game found.",
+      game: game
+    });
 
 
 

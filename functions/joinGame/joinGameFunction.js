@@ -24,7 +24,6 @@ client
       });
     }
 
-    // Fetch the game document
     const game = await database.getDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
@@ -42,19 +41,16 @@ client
     
     let players = game.players || [];
 
-    // Check if the player is already in the game
     if (players.some(player => player.userId === userId)) {
       return res.json({ success: true, message: 'Player already joined.' });
     }
 
-    // Add the player with sanitized username
     players.push({
       userId,
       username: username.trim(),
-      ticked: []  // Initially, no events ticked
+      ticked: []
     });
 
-    // Update the document with optimistic concurrency control
     try {
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,

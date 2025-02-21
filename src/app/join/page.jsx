@@ -29,10 +29,11 @@ export default function JoinGame() {
 
   const handleInput = (index, value) => {
     const newGameCode = [...gameCode];
-    newGameCode[index] = value.toUpperCase();
+    const upperValue = value.toUpperCase();
+    newGameCode[index] = upperValue;
     setGameCode(newGameCode);
     
-    if (value.length === 1 && index < 3) {
+    if (upperValue.length === 1 && index < 3) {
       inputRefs.current[index + 1].focus();
       setFocusedIndex(index + 1);
     }
@@ -47,7 +48,7 @@ export default function JoinGame() {
         const result = await functions.createExecution('67b741820010d7638006', payload);
         const response = JSON.parse(result.response);
         
-        if (response.success) {
+        if (response.success && response.game) {
           setStep('username');
           setError('');
         } else {
@@ -70,8 +71,8 @@ export default function JoinGame() {
         const searchPayload = JSON.stringify({ gameCode: code });
         const searchResult = await functions.createExecution('67b741820010d7638006', searchPayload);
         const searchResponse = JSON.parse(searchResult.response);
-
-        if (!searchResponse.success) {
+upd        
+        if (!searchResponse.success || !searchResponse.game) {
           setError(searchResponse.error || 'Game not found');
           return;
         }
@@ -84,7 +85,7 @@ export default function JoinGame() {
         const joinResult = await functions.createExecution('67b713e9000667794adc', joinPayload);
         const joinResponse = JSON.parse(joinResult.response);
 
-        if (!joinResponse.success) {
+        if (!joinResponse.response) {
           setError(joinResponse.error || 'Failed to join game');
           return;
         }
