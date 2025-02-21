@@ -23,6 +23,7 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
+    // Get the game document
     const game = await database.getDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
@@ -64,6 +65,17 @@ export default async ({ req, res, log, error }) => {
     const newPlayerString = JSON.stringify(newPlayerObj);
     players.push(newPlayerString);
 
+    // Retrieve current permissions from the game document, if any
+    const currentPermissions = game.$permissions || [];
+
+    // Check if the new permission is already set to avoid duplicates
+    const newPermission = Permission.read(Role.user(userId));
+    const hasPermission = currentPermissions.some(perm => perm === newPermission);
+    const updatedPermissions = hasPermission ? currentPermissions : [
+      ...currentPermissions,
+      newPermission
+    ];
+
     try {
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,
@@ -71,9 +83,7 @@ export default async ({ req, res, log, error }) => {
         gameId,
         {
           players,
-          $permissions: [
-            Permission.read(Role.user(userId))
-          ]
+          $permissions: updatedPermissions
         }
       );
 
@@ -89,11 +99,11 @@ export default async ({ req, res, log, error }) => {
       throw updateError;
     }
 
-  } catch (error) {
-    console.error("Error in joinGameFunction:", error);
+  } catch (err) {
+    console.error("Error in joinGameFunction:", err);
     return res.json({
       success: false,
-      error: error.message || "Unknown error occurred"
+      error: err.message || "Unknown error occurred"
     });
   }
 };
