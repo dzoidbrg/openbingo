@@ -19,7 +19,7 @@ export default function JoinGame() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.$id);
+        setUserId(session.id);
       } catch (error) {
         console.error('Error initializing session:', error);
       }

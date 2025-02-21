@@ -26,7 +26,7 @@ export default function GamePage() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.$id);
+        setUserId(session.id);
       } catch (err) {
         console.error('Error initializing session:', err);
       }
