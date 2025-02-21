@@ -17,10 +17,10 @@ export default async ({ req, res, log, error }) => {
     console.log("Parsed payload:", payload);
 
     const { gameCode } = payload;
-    if (!gameCode || gameCode.length !== 4) {
+    if (!gameCode || String(gameCode).length !== 4) {
       return res.json({
         success: false,
-        error: "Missing or invalid gameCode. Must be a 4 character string."
+        error: "Missing or invalid gameCode. Must be 4 characters long."
       });
     }
 
