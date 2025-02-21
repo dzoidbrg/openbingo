@@ -14,6 +14,7 @@ export default function CreateGame() {
   const [events, setEvents] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' for game creation, 'username' for host joining
   const [createdGame, setCreatedGame] = useState(null);
   const [username, setUsername] = useState('');
@@ -27,10 +28,12 @@ export default function CreateGame() {
         } else {
           console.error('Invalid session response');
           setError('Session not initialized. Please try again.');
+      setIsLoading(false);
         }
       } catch (error) {
         console.error('Error initializing session:', error);
         setError('Session not initialized. Please try again.');
+      setIsLoading(false);
       }
     };
     initSession();
@@ -61,21 +64,25 @@ export default function CreateGame() {
 
   // Step 1: Create the game document with extra fields (players, votes, verifiedEvents)
   const handleCreateGame = async (e) => {
+    setIsLoading(true);
     e.preventDefault();
     setError('');
 
     if (!userId) {
       setError('Session not initialized. Please try again.');
+      setIsLoading(false);
       return;
     }
 
     if (events.length === 0) {
       setError('Please add at least one event.');
+      setIsLoading(false);
       return;
     }
 
     if (events.some(event => !event.trim())) {
       setError('All events must have content.');
+      setIsLoading(false);
       return;
     }
 
@@ -130,6 +137,7 @@ export default function CreateGame() {
     } catch (error) {
       console.error('Error creating game:', error);
       setError('Failed to create game. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -152,6 +160,7 @@ export default function CreateGame() {
     }
     if (!userId) {
       setError('Session not initialized. Please try again.');
+      setIsLoading(false);
       return;
     }
 
@@ -295,10 +304,22 @@ export default function CreateGame() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-              disabled={events.length === 0 || events.some(event => !event.trim()) || !userId}
+              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}
             >
-              Create Game
+              {isLoading ? (
+                <>
+                  <div
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                    role="status"
+                  >
+                    <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+                  </div>
+                  Creating...
+                </>
+              ) : (
+                'Create Game'
+              )}
             </button>
           </form>
         ) : (
