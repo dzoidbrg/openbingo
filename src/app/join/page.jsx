@@ -15,7 +15,9 @@ export default function JoinGame() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [charCount, setCharCount] = useState(0);
   const inputRefs = useRef([]);
+  const maxUsernameLength = 20;
 
   useEffect(() => {
     const initSession = async () => {
@@ -41,6 +43,12 @@ export default function JoinGame() {
     if (code && code.length === 4) {
       const codeArray = code.split('');
       setGameCode(codeArray);
+      // Auto-fill the input boxes
+      codeArray.forEach((char, index) => {
+        if (inputRefs.current[index]) {
+          inputRefs.current[index].value = char.toUpperCase();
+        }
+      });
     }
   }, [searchParams]);
 
@@ -53,6 +61,14 @@ export default function JoinGame() {
     if (upperValue.length === 1 && index < 3) {
       inputRefs.current[index + 1].focus();
       setFocusedIndex(index + 1);
+    }
+  };
+
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    if (value.length <= maxUsernameLength) {
+      setUsername(value);
+      setCharCount(value.length);
     }
   };
 
@@ -175,18 +191,24 @@ export default function JoinGame() {
         <>
           <p className="text-lg text-muted-foreground mb-4 block">Enter your username to join the game</p>
           <div className="w-full max-w-sm">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Your username"
-              className={cn(
-                "w-full px-4 py-3 text-lg",
-                "bg-background border-2 border-secondary",
-                "text-foreground focus:border-primary",
-                "outline-none transition-colors rounded-md"
-              )}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={username}
+                onChange={handleUsernameChange}
+                placeholder="Your username"
+                maxLength={maxUsernameLength}
+                className={cn(
+                  "w-full px-4 py-3 text-lg pr-16",
+                  "bg-background border-2 border-secondary",
+                  "text-foreground focus:border-primary",
+                  "outline-none transition-colors rounded-md"
+                )}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                {charCount}/{maxUsernameLength}
+              </span>
+            </div>
           </div>
           {error && <p className="text-red-500">{error}</p>}
           <button
