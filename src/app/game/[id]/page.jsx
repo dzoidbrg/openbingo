@@ -28,7 +28,7 @@ export default function GamePage() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.id);
+        setUserId(session.$id);
       } catch (err) {
         console.error('Error initializing session:', err);
         setError('Failed to initialize session');
@@ -70,6 +70,27 @@ export default function GamePage() {
       }
     };
   }, [gameId]); // Add gameId as dependency
+
+  const getCurrentPlayer = () => {
+    if (!game?.players || !userId) return null;
+    return game.players.find(player => {
+      if (typeof player === 'string') {
+        try {
+          const parsedPlayer = JSON.parse(player);
+          return parsedPlayer.userId === userId;
+        } catch (e) {
+          console.error('Error parsing player:', e);
+          return false;
+        }
+      }
+      return player.userId === userId;
+    });
+  };
+
+  const currentPlayer = getCurrentPlayer();
+  const currentUsername = currentPlayer ? 
+    (typeof currentPlayer === 'string' ? JSON.parse(currentPlayer).username : currentPlayer.username) 
+    : 'Unknown';
 
   const isHost = game && game.creatorId === userId;
 
@@ -197,13 +218,14 @@ export default function GamePage() {
     <div className="min-h-screen p-4">
       {/* Top Bar */}
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Game Code:</span>
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-mono font-medium text-lg">
-              {showGameCode ? (game?.gameCode || 'N/A') : '****'}
-            </span>
-            <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">Game Code:</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-medium text-lg">
+                {showGameCode ? (game?.gameCode || 'N/A') : '****'}
+              </span>
+              <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowGameCode(!showGameCode)}
                 className="p-1 hover:bg-secondary/20 rounded-full transition-colors"
@@ -235,7 +257,14 @@ export default function GamePage() {
                   <path d="M3 21l7-7" />
                 </svg>
               </button>
+              </div>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Player:</span>
+            <span className="font-medium">
+              {currentUsername}
+            </span>
           </div>
         </div>
         <button
