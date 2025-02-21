@@ -17,6 +17,7 @@ export default async ({ req, res, log, error }) => {
     console.log("Parsed payload:", payload);
 
     const { gameCode } = payload;
+    console.log(gameCode)
     if (!gameCode || String(gameCode).length !== 4) {
       return res.json({
         success: false,
