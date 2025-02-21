@@ -1,19 +1,18 @@
-const sdk = require('node-appwrite');
+import { Client, Database, Query } from 'node-appwrite';
 
-const client = new sdk.Client();
-client
-  .setEndpoint(process.env.APPWRITE_ENDPOINT) 
-  .setProject(process.env.APPWRITE_PROJECT_ID)
-  .setKey(process.env.APPWRITE_API_KEY);
 
-const database = new sdk.Databases(client);
-const Query = sdk.Query;
+export default async ({ req, res, log, error }) => {
 
-module.exports = async function (req, res) {
-  try {
+  const client = new Client();
+  client
+    .setEndpoint(process.env.APPWRITE_ENDPOINT) 
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
+  const database = new Database(client);
+
+    try {
     console.log("Received request:", req);
 
-    // Extract payload safely from the nested request structure
     const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
     console.log("Parsed payload:", payload);
 
@@ -25,7 +24,6 @@ module.exports = async function (req, res) {
       });
     }
 
-    // Search for game using gameCode with proper query filter
     const result = await database.listDocuments(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
@@ -36,24 +34,18 @@ module.exports = async function (req, res) {
     );
 
     if (!result || result.total === 0) {
-      return res.json({
-        success: false,
-        error: "Game not found with the provided code."
-      });
+      return res.text('No games found with the specified code', 404);
     }
 
     const game = result.documents[0];
     console.log("Found game document:", game);
     
-    return res.json({
-      success: true
-    });
+    return res.text('Game found', 200);
+
+
 
   } catch (error) {
     console.error("Error in searchGameFunction:", error);
-    return res.json({
-      success: false,
-      error: error.message || "An unexpected error occurred while searching for the game"
-    });
+    return res.text('An unexpected error occured while searching for the game.', 500);
   }
 };

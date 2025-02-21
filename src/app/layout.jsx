@@ -5,7 +5,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "OpenBingo - Create and Share Bingo Games",
-  description: "Create, share, and play bingo games with friends and colleagues. The modern way to make bingo fun and engaging.",
+  description: "Create, share, and play bingo games with friends. The modern way to make bingo fun and engaging.",
 };
 
 export default function RootLayout({ children }) {
