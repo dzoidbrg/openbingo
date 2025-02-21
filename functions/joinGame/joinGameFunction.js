@@ -15,7 +15,17 @@ export default async ({ req, res, log, error }) => {
     const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
     console.log("Parsed payload:", payload);
 
-    const { gameId, userId, username } = payload;
+    const { gameId, userId, username, ...extraFields } = payload;
+    
+    // Check for any unauthorized fields
+    if (Object.keys(extraFields).length > 0) {
+      return res.json({
+        success: false,
+        error: 'Invalid request: Only gameId, userId, and username are allowed.'
+      });
+    }
+
+    // Validate required fields
     if (!gameId || !userId || !username || typeof username !== 'string') {
       return res.json({
         success: false,

@@ -56,11 +56,18 @@ export default function GamePage() {
 
     fetchGame();
 
-    // Realtime subscription – only users with read permissions (joined users) can subscribe.
+    // Realtime subscription for game updates and player joins
     const channel = `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${gameId}`;
     const unsubscribe = subscribeRealtime(channel, (response) => {
       if (response.payload) {
         setGame(response.payload);
+        // Log new player joins
+        const currentPlayers = game?.players || [];
+        const newPlayers = response.payload.players || [];
+        if (newPlayers.length > currentPlayers.length) {
+          const latestPlayer = newPlayers[newPlayers.length - 1];
+          console.log(`New player joined: ${JSON.parse(latestPlayer).username}`);
+        }
       }
     });
 

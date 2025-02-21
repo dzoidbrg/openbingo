@@ -90,9 +90,9 @@ export default function JoinGame() {
           username: username.trim()
         });
         const joinResult = await functions.createExecution('67b713e9000667794adc', joinPayload);
-        const joinResponse = JSON.parse(joinResult.responseStatusCode);
+        const joinResponse = JSON.parse(joinResult.responseBody);
         console.log(joinResponse)
-        if (joinResponse !== 200) {
+        if (!joinResponse.success) {
           setError(joinResponse.error || "Failed to join game. Ensure you haven't joined already");
           return;
         }
