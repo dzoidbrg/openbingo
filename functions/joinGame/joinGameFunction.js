@@ -25,11 +25,19 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
-    // Validate required fields
+    // Validate required fields and username length
     if (!gameId || !userId || !username || typeof username !== 'string') {
       return res.json({
         success: false,
         error: 'Missing or invalid parameters. gameId, userId, and username (string) are required.'
+      });
+    }
+
+    // Check username length
+    if (username.length > 20) {
+      return res.json({
+        success: false,
+        error: 'Username must not exceed 20 characters.'
       });
     }
 

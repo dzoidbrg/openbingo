@@ -18,6 +18,16 @@ export default function CreateGame() {
   const [step, setStep] = useState('form'); // 'form' for game creation, 'username' for host joining
   const [createdGame, setCreatedGame] = useState(null);
   const [username, setUsername] = useState('');
+  const maxUsernameLength = 20;
+  const [charCount, setCharCount] = useState(0);
+
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    if (value.length <= maxUsernameLength) {
+      setUsername(value);
+      setCharCount(value.length);
+    }
+  };
 
   useEffect(() => {
     const initSession = async () => {
@@ -329,19 +339,24 @@ export default function CreateGame() {
               <label htmlFor="username" className="block text-lg font-medium text-foreground">
                 Enter your username (Host)
               </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your username"
-                className={cn(
-                  "w-full px-4 py-2 rounded-md",
-                  "bg-background border-2 border-secondary",
-                  "text-foreground focus:border-primary",
-                  "outline-none transition-colors"
-                )}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={handleUsernameChange}
+                  placeholder="Your username"
+                  maxLength={maxUsernameLength}
+                  className={cn(
+                    "w-full px-4 py-3 text-lg pr-16",
+                    "bg-background border-2 border-secondary",
+                    "text-foreground focus:border-primary",
+                    "outline-none transition-colors rounded-md"
+                  )}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  {charCount}/{maxUsernameLength}
+                </span>
+              </div>
             </div>
             {error && <p className="text-red-500">{error}</p>}
             <button
