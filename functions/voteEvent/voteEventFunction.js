@@ -16,7 +16,7 @@ const database = new Databases(client);
 
     // Extract payload safely from the nested request structure
     const payload = req.bodyJson || JSON.parse(req.body || '{}');
-    console.log("Parsed payload:", payload);
+    console.log("Parseddd payload:", payload);
 
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
