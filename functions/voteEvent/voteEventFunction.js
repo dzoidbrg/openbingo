@@ -61,7 +61,7 @@ const database = new Databases(client);
     if (!game.players?.some(player => player.userId === userId)) {
       return res.json({
         success: false,
-        error: 'User is not a participant in this game.'
+        error: 'User isa idan not a participant in this game.'
       });
     }
 
