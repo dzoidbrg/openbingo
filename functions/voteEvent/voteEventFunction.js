@@ -56,7 +56,7 @@ const database = new Databases(client);
       });
     }
     console.log("Dumping player");
-    console.log(game.players);
+    console.log(JSON.parse(game.players[0]));
     // Validate the player is in the game
     if (!game.players?.some(player => player.userId === userId)) {
       return res.json({
