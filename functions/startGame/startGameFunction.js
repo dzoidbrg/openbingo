@@ -37,14 +37,13 @@ export default async ({ req, res }) => {
     }
 
     // Verify the user is the host
-    if (game.creatorId !== userId) {
+    if (game.host !== userId) {
       return res.json({
         success: false,
         error: 'Only the host can start the game'
       });
     }
 
-    // Verify game is in waiting status
     if (game.status !== 'waiting') {
       return res.json({
         success: false,
