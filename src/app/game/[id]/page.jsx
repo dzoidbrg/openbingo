@@ -355,16 +355,67 @@ export default function GamePage() {
 
       {/* Waiting Room */}
       {game.status === 'waiting' && (
-        <div className="mb-6 p-4 bg-secondary/10 rounded-lg text-center">
-          {isHost ? (
-            <p className="text-lg font-medium">
-              Press "Start Game" to begin! Waiting for {(game.players || []).length} player(s)...
-            </p>
-          ) : (
-            <p className="text-lg font-medium">
-              Waiting for host to start the game...
-            </p>
-          )}
+        <div className="mb-6 p-6 bg-secondary/10 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+            {/* Game Info */}
+            <div className="space-y-4 md:border-r border-dotted border-border md:pr-6">
+              <h3 className="text-xl font-semibold">Game Configuration</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Board Size:</span>
+                  <span className="font-medium">{game.boardSize}x{game.boardSize}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Vote Threshold:</span>
+                  <span className="font-medium">{game.votingThreshold}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Total Events:</span>
+                  <span className="font-medium">{game.events.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Players List */}
+            <div className="space-y-4 md:pl-6">
+              <h3 className="text-xl font-semibold">Players in Lobby</h3>
+              <div className="space-y-2">
+                {(game.players || []).map((player, index) => {
+                  const playerData = typeof player === 'string' ? JSON.parse(player) : player;
+                  const isCurrentPlayer = playerData.userId === userId;
+                  return (
+                    <div key={index} className="flex items-center justify-between p-2 bg-background/50 rounded">
+                      <span className={cn("font-medium", isCurrentPlayer && "font-bold")}>{playerData.username}</span>
+                      {playerData.userId === game.creatorId && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Host</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Waiting Message */}
+          <div className="mt-6 text-center pt-6 border-t border-dotted border-border">
+            {isHost ? (
+              <div className="space-y-4">
+                <p className="text-lg font-medium">
+                  Press "Start Game" to begin!
+                </p>
+                <button
+                  onClick={handleStartGame}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all transform hover:scale-105"
+                >
+                  Start Game
+                </button>
+              </div>
+            ) : (
+              <p className="text-lg font-medium animate-pulse">
+                Waiting for host to start the game...
+              </p>
+            )}
+          </div>
         </div>
       )}
 
