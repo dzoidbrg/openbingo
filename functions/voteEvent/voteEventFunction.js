@@ -58,7 +58,7 @@ const database = new Databases(client);
     console.log("Dumping player");
     console.log(JSON.parse(game.players[0]));
     // Validate the player is in the game
-    if (!game.players?.some(player => player.userId === userId)) {
+    if (!game.players?.some(player => JSON.parse(player.userId) === userId)) {
       return res.json({
         success: false,
         error: 'User isa idan not a participant in this game.'
