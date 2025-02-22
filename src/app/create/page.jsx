@@ -3,6 +3,13 @@
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { account, createGame, getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const FUNCTION_IDS = {
   CREATE_GAME: '67b74156001710462423',
@@ -10,12 +17,15 @@ const FUNCTION_IDS = {
 };
 
 export default function CreateGame() {
+  const [statusMessage, setStatusMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const { toast } = useToast();
   const [boardSize, setBoardSize] = useState(3);
   const [events, setEvents] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState('form'); // 'form' for game creation, 'username' for host joining
+  const [step, setStep] = useState('form');
   const [createdGame, setCreatedGame] = useState(null);
   const [username, setUsername] = useState('');
   const maxUsernameLength = 20;
@@ -38,12 +48,20 @@ export default function CreateGame() {
         } else {
           console.error('Invalid session response');
           setError('Session not initialized. Please try again.');
-      setIsLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Session not initialized. Please try again.",
+          });
         }
       } catch (error) {
         console.error('Error initializing session:', error);
         setError('Session not initialized. Please try again.');
-      setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Session not initialized. Please try again.",
+        });
       }
     };
     initSession();
@@ -59,8 +77,8 @@ export default function CreateGame() {
   };
 
   const handleBoardSizeChange = (newSize) => {
-    setBoardSize(newSize);
-    const newMaxEvents = newSize * newSize;
+    setBoardSize(Number(newSize));
+    const newMaxEvents = Number(newSize) * Number(newSize);
     if (events.length > newMaxEvents) {
       setEvents(events.slice(0, newMaxEvents));
     }
@@ -72,31 +90,44 @@ export default function CreateGame() {
     setEvents(newEvents);
   };
 
-  // Step 1: Create the game document with extra fields (players, votes, verifiedEvents)
   const handleCreateGame = async (e) => {
-    setIsLoading(true);
     e.preventDefault();
+    setIsLoading(true);
     setError('');
 
     if (!userId) {
       setError('Session not initialized. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Session not initialized. Please try again.",
+      });
       setIsLoading(false);
       return;
     }
 
     if (events.length === 0) {
       setError('Please add at least one event.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please add at least one event.",
+      });
       setIsLoading(false);
       return;
     }
 
     if (events.some(event => !event.trim())) {
       setError('All events must have content.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "All events must have content.",
+      });
       setIsLoading(false);
       return;
     }
 
-    // Generate a unique game code (as before)
     const gameData = `${userId}-${boardSize}-${events.join('')}`;
     const encoder = new TextEncoder();
     const data = encoder.encode(gameData);
@@ -107,10 +138,6 @@ export default function CreateGame() {
     const formattedGameCode = gameCode.toString().padStart(4, '0');
 
     try {
-      // Create game document. Note that we include extra fields:
-      // players: [] (empty at first)
-      // votes: an array of zeros (one for each event)
-      // verifiedEvents: [] (none verified yet)
       const payload = {
         creatorId: userId,
         boardSize: boardSize,
@@ -124,17 +151,10 @@ export default function CreateGame() {
         JSON.stringify(payload)
       );
 
-      console.log('Create game response:', response);
-
-      if (!response) {
-        throw new Error('Invalid response from server');
-      }
-
       const result = JSON.parse(response.responseBody);
-      console.log('Create game result:', result);
       
       if (result.success === false) {
-        throw new Error(result.error || 'Failed to create game. success is false');
+        throw new Error(result.error || 'Failed to create game');
       }
 
       if (!result.game || !result.game.$id) {
@@ -142,34 +162,59 @@ export default function CreateGame() {
       }
 
       setCreatedGame(result.game);
-      // move to the next step: ask for host username
+      toast({
+        title: "Success!",
+        description: "Game created successfully. Please enter your username to continue.",
+      });
       setStep('username');
     } catch (error) {
       console.error('Error creating game:', error);
       setError('Failed to create game. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create game. Please try again.",
+      });
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 2: Host enters username and we call the cloud function to add them to the game's players array
   const handleJoinAsHost = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
-    // Validate username
     const trimmedUsername = username.trim();
     if (!trimmedUsername) {
       setError('Please enter a valid username.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a valid username.",
+      });
+      setIsLoading(false);
       return;
     }
 
-    // Validate game and user
     if (!createdGame || !createdGame.$id) {
       setError('Game not found. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Game not found. Please try again.",
+      });
+      setIsLoading(false);
       return;
     }
+
     if (!userId) {
       setError('Session not initialized. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Session not initialized. Please try again.",
+      });
       setIsLoading(false);
       return;
     }
@@ -181,194 +226,167 @@ export default function CreateGame() {
         username: trimmedUsername
       };
 
-      console.log('Join game payload:', joinPayload);
-
       const response = await functions.createExecution(
         FUNCTION_IDS.JOIN_GAME,
         JSON.stringify(joinPayload)
       );
 
-      console.log('Join game response:', response);
-
-      if (!response) {
-        console.error('Invalid response from server:', response);
-        throw new Error('Invalid response from server');
-      }
-
       const result = JSON.parse(response.responseBody);
-      console.log('Join game result:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to join game');
       }
 
-      if (result.message === 'Player already joined.') {
-        console.log('Player already joined, proceeding to game page');
-      }
-
-      // After successful join, redirect to game page
+      toast({
+        title: "Success!",
+        description: "Joining game as host...",
+      });
       window.location.href = `/game/${createdGame.$id}`;
     } catch (error) {
       console.error('Error joining game as host:', error);
       setError(error.message || 'Failed to join game as host. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to join game as host. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-8">
-      <h1 className="text-4xl font-bold tracking-tighter mb-6 text-primary">Create Game</h1>
-      <div className="w-full max-w-2xl space-y-8">
-        {step === 'form' ? (
-          <form className="space-y-6" onSubmit={handleCreateGame}>
-            {/* Board Size Selection */}
-            <div className="space-y-2">
-              <label htmlFor="boardSize" className="block text-lg font-medium text-foreground">
-                Board Size
-              </label>
-              <select
-                id="boardSize"
-                name="boardSize"
-                value={boardSize}
-                onChange={(e) => handleBoardSizeChange(Number(e.target.value))}
-                className={cn(
-                  "w-full px-4 py-2 rounded-md",
-                  "bg-background border-2 border-secondary",
-                  "text-foreground focus:border-primary",
-                  "outline-none transition-colors"
-                )}
-              >
-                <option value="3">3 x 3</option>
-                <option value="4">4 x 4</option>
-                <option value="5">5 x 5</option>
-              </select>
-            </div>
+      <Card className="w-full max-w-2xl shadow-lg">
+        <CardContent className="p-6">
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center"
+          >
+            Create Game
+          </motion.h1>
 
-            {/* Voting Threshold */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label htmlFor="threshold" className="block text-lg font-medium text-foreground">
-                  Voting Threshold (%)
-                </label>
-                <div className="relative group">
-                  <div className="cursor-help text-muted-foreground">ⓘ</div>
-                  <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
-                    The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
+          <AnimatePresence mode="wait">
+            {step === 'form' ? (
+              <motion.form
+                key="create-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
+                onSubmit={handleCreateGame}
+              >
+                <div className="space-y-2">
+                  <label className="block text-lg font-medium text-foreground">
+                    Board Size
+                  </label>
+                  <Select value={boardSize.toString()} onValueChange={handleBoardSizeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select board size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 x 3</SelectItem>
+                      <SelectItem value="4">4 x 4</SelectItem>
+                      <SelectItem value="5">5 x 5</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="threshold" className="block text-lg font-medium text-foreground">
+                      Voting Threshold (%)
+                    </label>
+                    <div className="relative group">
+                      <div className="cursor-help text-muted-foreground">ⓘ</div>
+                      <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
+                        The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
+                      </div>
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    id="threshold"
+                    min="1"
+                    max="100"
+                    defaultValue="50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-lg font-medium text-foreground">
+                      Bingo Events ({events.length}/{maxEvents})
+                    </label>
+                    <Button
+                      onClick={handleAddEvent}
+                      disabled={events.length >= maxEvents}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      Add Event
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {events.map((event, index) => (
+                      <Input
+                        key={index}
+                        value={event}
+                        onChange={(e) => handleEventChange(index, e.target.value)}
+                        placeholder={`Event ${index + 1}`}
+                      />
+                    ))}
                   </div>
                 </div>
-              </div>
-              <input
-                type="number"
-                id="threshold"
-                name="threshold"
-                min="1"
-                max="100"
-                defaultValue="50"
-                className={cn(
-                  "w-full px-4 py-2 rounded-md",
-                  "bg-background border-2 border-secondary",
-                  "text-foreground focus:border-primary",
-                  "outline-none transition-colors"
-                )}
-              />
-            </div>
 
-            {/* Bingo Events */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="block text-lg font-medium text-foreground">
-                  Bingo Events ({events.length}/{maxEvents})
-                </label>
-                <button
-                  onClick={handleAddEvent}
-                  disabled={events.length >= maxEvents}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium",
-                    "bg-secondary text-secondary-foreground",
-                    "hover:bg-secondary/80 transition-colors",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}
                 >
-                  Add Event
-                </button>
-              </div>
-              <div className="space-y-4">
-                {events.map((event, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    value={event}
-                    onChange={(e) => handleEventChange(index, e.target.value)}
-                    placeholder={`Event ${index + 1}`}
-                    className={cn(
-                      "w-full px-4 py-2 rounded-md",
-                      "bg-background border-2 border-secondary",
-                      "text-foreground focus:border-primary",
-                      "outline-none transition-colors"
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {error && <p className="text-red-500">{error}</p>}
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-              disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div
-                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                    role="status"
-                  >
-                    <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+                  {isLoading ? "Creating..." : "Create Game"}
+                </Button>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="username-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
+                onSubmit={handleJoinAsHost}
+              >
+                <div className="space-y-2">
+                  <label className="block text-lg font-medium text-foreground">
+                    Enter your username (Host)
+                  </label>
+                  <div className="relative">
+                    <Input
+                      value={username}
+                      onChange={handleUsernameChange}
+                      placeholder="Your username"
+                      maxLength={maxUsernameLength}
+                      className="pr-16"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {charCount}/{maxUsernameLength}
+                    </span>
                   </div>
-                  Creating...
-                </>
-              ) : (
-                'Create Game'
-              )}
-            </button>
-          </form>
-        ) : (
-          // Step 2: Ask host for a username before joining the game
-          <form className="space-y-6" onSubmit={handleJoinAsHost}>
-            <div className="space-y-2">
-              <label htmlFor="username" className="block text-lg font-medium text-foreground">
-                Enter your username (Host)
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={username}
-                  onChange={handleUsernameChange}
-                  placeholder="Your username"
-                  maxLength={maxUsernameLength}
-                  className={cn(
-                    "w-full px-4 py-3 text-lg pr-16",
-                    "bg-background border-2 border-secondary",
-                    "text-foreground focus:border-primary",
-                    "outline-none transition-colors rounded-md"
-                  )}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  {charCount}/{maxUsernameLength}
-                </span>
-              </div>
-            </div>
-            {error && <p className="text-red-500">{error}</p>}
-            <button
-              type="submit"
-              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-              disabled={!username.trim() || !userId}
-            >
-              Join as Host
-            </button>
-          </form>
-        )}
-      </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!username.trim() || !userId || isLoading}
+                >
+                  {isLoading ? "Joining..." : "Join as Host"}
+                </Button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+      <Toaster />
     </div>
   );
 }

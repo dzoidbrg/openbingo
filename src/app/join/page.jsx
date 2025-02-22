@@ -5,13 +5,22 @@ import { useRef, useState, useEffect } from 'react';
 import { account, getOrCreateAnonymousSession, databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, functions } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { useSearchParams } from 'next/navigation';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function JoinGame() {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
+  const [statusMessage, setStatusMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [gameCode, setGameCode] = useState(['', '', '', '']);
   const [userId, setUserId] = useState(null);
-  const [step, setStep] = useState('code'); // 'code' or 'username'
+  const [step, setStep] = useState('code');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,13 +46,11 @@ export default function JoinGame() {
     initSession();
   }, []);
 
-  // Handle URL parameter for game code
   useEffect(() => {
     const code = searchParams.get('code');
     if (code && code.length === 4) {
       const codeArray = code.split('');
       setGameCode(codeArray);
-      // Auto-fill the input boxes
       codeArray.forEach((char, index) => {
         if (inputRefs.current[index]) {
           inputRefs.current[index].value = char.toUpperCase();
@@ -84,12 +91,21 @@ export default function JoinGame() {
         if (response.success && response.game) {
           setStep('username');
           setError('');
+          setStatusMessage('Game found! Please enter your username to join.');
+          setMessageType('success');
         } else {
           setError(response.error || 'Game not found. Please check the code.');
+          setStatusMessage(response.error || 'Game not found. Please check the code.');
+          setMessageType('error');
         }
       } catch (error) {
         console.error('Error verifying game:', error);
         setError('Game not found. Please check the code.');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: 'Game not found. Please check the code.',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -103,11 +119,15 @@ export default function JoinGame() {
       try {
         const searchPayload = JSON.stringify({ gameCode: code });
         const searchResult = await functions.createExecution('67b741820010d7638006', searchPayload);
-
         const searchResponse = JSON.parse(searchResult.responseBody);
-        console.log(searchResponse)
+
         if (!searchResponse.success || !searchResponse.game) {
           setError(searchResponse.error || 'Game not found');
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: searchResponse.error || 'Game not found',
+          });
           return;
         }
 
@@ -118,16 +138,30 @@ export default function JoinGame() {
         });
         const joinResult = await functions.createExecution('67b713e9000667794adc', joinPayload);
         const joinResponse = JSON.parse(joinResult.responseBody);
-        console.log(joinResponse)
+
         if (!joinResponse.success) {
           setError(joinResponse.error || "Failed to join game. Ensure you haven't joined already");
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: joinResponse.error || "Failed to join game. Ensure you haven't joined already",
+          });
           return;
         }
 
+        toast({
+          title: "Success!",
+          description: "Joining game...",
+        });
         window.location.href = `/game/${searchResponse.game.$id}`;
       } catch (error) {
         console.error('Error joining game:', error);
         setError('Failed to join game. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: 'Failed to join game. Please try again.',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -140,93 +174,96 @@ export default function JoinGame() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4" suppressHydrationWarning>
-      <h1 className="text-4xl font-bold tracking-tighter mb-2 text-[#FFD700] block">Join the fun!</h1>
-      <div className={cn(
-        "transition-all duration-300 ease-in-out",
-        step === 'username' ? "h-0 opacity-0 overflow-hidden" : "h-auto opacity-100"
-      )}>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-      </div>
-      {step === 'code' ? (
-        <>
-          <p className="text-lg text-muted-foreground mb-4 block">Enter your code in the boxes below</p>
-          <div className="w-full max-w-sm flex justify-center gap-2">
-            {[0, 1, 2, 3].map((index) => (
-              <input
-                key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
-                type="text"
-                maxLength={1}
-                onInput={(e) => {
-                  handleInput(index, e.target.value);
-                }}
-                onFocus={() => handleFocus(index)}
-                className={cn(
-                  "w-16 h-20 text-center text-2xl font-bold",
-                  "bg-background border-2 border-secondary",
-                  "text-foreground focus:border-primary",
-                  "outline-none transition-colors rounded-md",
-                  "transform transition-transform duration-200",
-                  focusedIndex === index && focusedIndex !== null ? "-translate-y-1" : ""
-                )}
-              />
-            ))}
-          </div>
-          <button
-            onClick={handleVerifyCode}
-            className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            disabled={gameCode.join('').length !== 4 || !userId || isLoading}
-          >
-            {isLoading ? (
-              <div
-                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                role="status"
-              >
-                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-              </div>
-            ) : 'Next'}
-          </button>
-        </>
-      ) : (
-        <>
-          <p className="text-lg text-muted-foreground mb-4 block">Enter your username to join the game</p>
-          <div className="w-full max-w-sm">
-            <div className="relative">
-              <input
-                type="text"
-                value={username}
-                onChange={handleUsernameChange}
-                placeholder="Your username"
-                maxLength={maxUsernameLength}
-                className={cn(
-                  "w-full px-4 py-3 text-lg pr-16",
-                  "bg-background border-2 border-secondary",
-                  "text-foreground focus:border-primary",
-                  "outline-none transition-colors rounded-md"
-                )}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                {charCount}/{maxUsernameLength}
-              </span>
+      <Card className="w-full max-w-md p-6 shadow-lg">
+        <CardContent>
+          {statusMessage && (
+            <div className={cn(
+              "p-4 mb-4 rounded-md",
+              messageType === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            )}>
+              {statusMessage}
             </div>
-          </div>
-          {error && <p className="text-red-500">{error}</p>}
-          <button
-            onClick={handleJoinGame}
-            className="mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            disabled={!username.trim() || !userId || isLoading}
+          )}
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center"
           >
-            {isLoading ? (
-              <div
-                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                role="status"
+            Join the fun!
+          </motion.h1>
+
+          <AnimatePresence mode="wait">
+            {step === 'code' ? (
+              <motion.div
+                key="code-step"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
               >
-                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-              </div>
-            ) : 'Join Game'}
-          </button>
-        </>
-      )}
+                <p className="text-lg text-muted-foreground text-center">Enter your game code</p>
+                <div className="flex justify-center gap-2">
+                  {[0, 1, 2, 3].map((index) => (
+                    <Input
+                      key={index}
+                      ref={(el) => (inputRefs.current[index] = el)}
+                      type="text"
+                      maxLength={1}
+                      onInput={(e) => handleInput(index, e.target.value)}
+                      onFocus={() => handleFocus(index)}
+                      className={cn(
+                        "w-16 h-20 text-center text-2xl font-bold",
+                        "bg-card border-2",
+                        "focus:ring-2 focus:ring-primary",
+                        "transform transition-all duration-200",
+                        focusedIndex === index ? "scale-110 border-primary" : "border-input"
+                      )}
+                    />
+                  ))}
+                </div>
+                <Button
+                  onClick={handleVerifyCode}
+                  className="w-full"
+                  disabled={gameCode.join('').length !== 4 || !userId || isLoading}
+                >
+                  {isLoading ? "Verifying..." : "Next"}
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="username-step"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
+              >
+                <p className="text-lg text-muted-foreground text-center">Choose your username</p>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={username}
+                    onChange={handleUsernameChange}
+                    placeholder="Your username"
+                    maxLength={maxUsernameLength}
+                    className="pr-16"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    {charCount}/{maxUsernameLength}
+                  </span>
+                </div>
+                <Button
+                  onClick={handleJoinGame}
+                  className="w-full"
+                  disabled={!username.trim() || !userId || isLoading}
+                >
+                  {isLoading ? "Joining..." : "Join Game"}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+      <Toaster />
     </div>
   );
 }

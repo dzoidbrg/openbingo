@@ -12,6 +12,7 @@ import {
   functions
 } from '@/lib/appwrite';
 import { Share2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GamePage() {
   const { id: gameId } = useParams(); // Get dynamic id from router
@@ -24,6 +25,7 @@ export default function GamePage() {
   const [showGameCode, setShowGameCode] = useState(true);
   const [showExpandedCode, setShowExpandedCode] = useState(false);
   const [copyStatus, setCopyStatus] = useState('Copy Link');
+  const { toast } = useToast();
 
   useEffect(() => {
     const initSession = async () => {
@@ -60,7 +62,23 @@ export default function GamePage() {
       `databases.${BINGO_DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${gameId}`,
       (response) => {
         if (response.events.includes('databases.*.collections.*.documents.*.update')) {
-          setGame(response.payload);
+          const newGame = response.payload;
+          const oldPlayers = game?.players || [];
+          const newPlayers = newGame.players || [];
+          
+          // Check if a new player has joined
+          if (newPlayers.length > oldPlayers.length) {
+            const latestPlayer = typeof newPlayers[newPlayers.length - 1] === 'string' 
+              ? JSON.parse(newPlayers[newPlayers.length - 1]) 
+              : newPlayers[newPlayers.length - 1];
+            
+            toast({
+              title: "New Player Joined!",
+              description: `${latestPlayer.username} has joined the game!`
+            });
+          }
+          
+          setGame(newGame);
         }
       }
     );
@@ -337,38 +355,15 @@ export default function GamePage() {
 
       {/* Waiting Room */}
       {game.status === 'waiting' && (
-        <div className="mb-4 p-4 border border-dashed border-secondary rounded-md">
-          <h2 className="text-2xl font-bold mb-2">Waiting Room</h2>
-          <p className="mb-2">Players joined:</p>
-          <ul className="mb-4">
-            {(game.players || []).map((playerString, idx) => {
-              try {
-                const player = typeof playerString === 'string' ? JSON.parse(playerString) : playerString;
-                return (
-                  <li key={idx} className="py-1 flex items-center gap-2">
-                    <span className={player.userId === userId ? 'font-bold' : ''}>
-                      {player.username}
-                    </span>
-                    {player.userId === game.creatorId && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
-                        HOST
-                      </span>
-                    )}
-                  </li>
-                );
-              } catch (e) {
-                console.error('Error parsing player data:', e);
-                return null;
-              }
-            })}
-          </ul>
-          {isHost && (
-            <button
-              onClick={handleStartGame}
-              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-            >
-              Start Game
-            </button>
+        <div className="mb-6 p-4 bg-secondary/10 rounded-lg text-center">
+          {isHost ? (
+            <p className="text-lg font-medium">
+              Press "Start Game" to begin! Waiting for {(game.players || []).length} player(s)...
+            </p>
+          ) : (
+            <p className="text-lg font-medium">
+              Waiting for host to start the game...
+            </p>
           )}
         </div>
       )}
@@ -429,6 +424,19 @@ export default function GamePage() {
           </div>
         </div>
       )}
+
+      {/* Events Preview */}
+      <div className="mt-8 p-6 bg-card rounded-lg shadow-sm border border-border">
+        <h2 className="text-xl font-semibold mb-4">All Bingo Events</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {game.events.map((event, index) => (
+            <div key={index} className="p-3 bg-background rounded border border-border">
+              <span className="text-muted-foreground text-sm mr-2">#{index + 1}</span>
+              <span>{event}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Modal for event details */}
       {modalEventIndex !== null && (
