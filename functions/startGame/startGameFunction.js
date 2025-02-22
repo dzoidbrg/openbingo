@@ -1,23 +1,15 @@
-const sdk = require('node-appwrite');
+import { Client, Databases } from 'node-appwrite';
 
-const client = new sdk.Client();
-const database = new sdk.Databases(client);
+const client = new Client();
+client
+  .setEndpoint(process.env.APPWRITE_ENDPOINT)
+  .setProject(process.env.APPWRITE_PROJECT_ID)
+  .setKey(process.env.APPWRITE_API_KEY);
 
-module.exports = async function (req, res) {
+const database = new Databases(client);
+
+export default async ({ req, res }) => {
   try {
-    // Initialize the Appwrite client
-    if (
-      !process.env.APPWRITE_FUNCTION_PROJECT_ID ||
-      !process.env.APPWRITE_FUNCTION_API_KEY
-    ) {
-      throw new Error('Environment variables are not set.');
-    }
-
-    client
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-      .setKey(process.env.APPWRITE_FUNCTION_API_KEY);
-
     // Extract payload
     const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
     console.log('Received payload:', payload);

@@ -97,14 +97,15 @@ export default function GamePage() {
 
   const handleStartGame = async () => {
     try {
-      await databases.updateDocument(
-        BINGO_DATABASE_ID,
-        GAMES_COLLECTION_ID,
-        game.$id,
-        { status: 'started' }
-      );
+      const payload = JSON.stringify({
+        gameId: game.$id,
+        userId
+      });
+      await functions.createExecution('67b8f901000f4dce9aae', payload);
     } catch (err) {
       console.error('Error starting game:', err);
+      // Show error message to user
+      setError('Failed to start game. Please try again.');
     }
   };
 
