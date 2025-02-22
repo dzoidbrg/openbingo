@@ -98,8 +98,7 @@ export default function GamePage() {
   const handleStartGame = async () => {
     try {
       const payload = JSON.stringify({
-        gameId: game.$id,
-        userId
+        gameId: game.$id
       });
       await functions.createExecution('67b8f901000f4dce9aae', payload);
     } catch (err) {

@@ -10,15 +10,24 @@ const database = new Databases(client);
 
 export default async ({ req, res }) => {
   try {
-    // Extract payload
-    const payload = req.req?.bodyJson || JSON.parse(req.req?.body || '{}');
+    // Extract payload and user ID from headers
+    const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
     console.log('Received payload:', payload);
 
-    const { gameId, userId } = payload;
-    if (!gameId || !userId) {
+    const userId = req.headers['x-appwrite-user-id'];
+    const { gameId } = payload;
+
+    if (!gameId) {
       return res.json({
         success: false,
-        error: 'Missing required parameters: gameId and userId'
+        error: 'Missing required parameter: gameId'
+      });
+    }
+
+    if (!userId) {
+      return res.json({
+        success: false,
+        error: 'User ID not found in request headers'
       });
     }
 
