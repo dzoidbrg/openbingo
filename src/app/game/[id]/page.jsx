@@ -225,7 +225,7 @@ export default function GamePage() {
               <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowGameCode(!showGameCode)}
-                className="p-1 hover:bg-secondary/20 rounded-full transition-colors"
+                className="p-1 hover:bg-secondary/20 rounded-full transition-colors text-foreground"
                 title={showGameCode ? "Hide Code" : "Show Code"}
               >
                 {showGameCode ? (
@@ -244,7 +244,7 @@ export default function GamePage() {
               </button>
               <button
                 onClick={() => setShowExpandedCode(true)}
-                className="p-1 hover:bg-secondary/20 rounded-full transition-colors"
+                className="p-1 hover:bg-secondary/20 rounded-full transition-colors text-foreground"
                 title="Expand Code"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -288,7 +288,7 @@ export default function GamePage() {
               <h3 className="text-2xl font-bold">Game Code</h3>
               <button
                 onClick={() => setShowExpandedCode(false)}
-                className="p-2 hover:bg-secondary/20 rounded-full transition-colors"
+                className="p-2 hover:bg-secondary/20 rounded-full transition-colors text-foreground"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -319,7 +319,7 @@ export default function GamePage() {
               </button>
               <button
                 disabled
-                className="w-full px-4 py-2 bg-secondary/50 text-secondary-foreground/50 rounded cursor-not-allowed flex items-center justify-center gap-2 relative"
+                className="w-full px-4 py-2 bg-secondary/50 text-foreground rounded cursor-not-allowed flex items-center justify-center gap-2 relative"
               >
                 <span className="line-through">Share via Email</span>
                 <span className="text-xs bg-secondary-foreground/10 px-2 py-0.5 rounded absolute -right-1 -top-1">Soon</span>
@@ -327,7 +327,7 @@ export default function GamePage() {
             </div>
             <button
               onClick={() => setShowShareModal(false)}
-              className="mt-4 w-full px-4 py-2 border border-input rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+              className="mt-4 w-full px-4 py-2 border border-input rounded hover:bg-accent hover:text-accent-foreground transition-colors text-foreground"
             >
               Close
             </button>
