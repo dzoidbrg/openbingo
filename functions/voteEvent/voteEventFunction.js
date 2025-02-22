@@ -55,7 +55,7 @@ const database = new Databases(client);
         error: 'Game must be started to vote.'
       });
     }
-
+    console.log(game.players);
     // Validate the player is in the game
     if (!game.players?.some(player => player.userId === userId)) {
       return res.json({
