@@ -13,7 +13,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="min-h-screen flex flex-col items-center justify-center px-4 py-24 text-center relative z-10">
         <Link
-          href="https://github.com/yourusername/openbingo"
+          href="https://github.com/dzoidberg/openbingo"
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
