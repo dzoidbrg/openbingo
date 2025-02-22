@@ -2,7 +2,7 @@ import { Client, Users } from 'node-appwrite';
 
 
 
-module.exports = async function (req, res) {
+export default async ({ req, res }) => {
   
 const client = new Client();
 client
