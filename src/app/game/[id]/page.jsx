@@ -325,7 +325,14 @@ export default function GamePage() {
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowShareModal(false);
+            }
+          }}
+        >
           <div className="bg-card p-6 rounded-lg w-96">
             <h3 className="text-xl font-bold mb-4">Share Game</h3>
             <div className="space-y-4">
