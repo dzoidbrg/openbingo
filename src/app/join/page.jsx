@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from "@/lib/utils";
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, Suspense } from 'react';
 import { account, getOrCreateAnonymousSession, databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, functions } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { useSearchParams } from 'next/navigation';
@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
 
-export default function JoinGame() {
+function JoinGameContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const [statusMessage, setStatusMessage] = useState('');
@@ -67,20 +67,16 @@ export default function JoinGame() {
     }
   }, [searchParams]);
 
-  // Updated handleInput: always replace the content in the box with the new input.
   const handleInput = (index, value) => {
     const newGameCode = [...gameCode];
-    // Always take the last character entered and force it to uppercase.
     const newChar = value.slice(-1).toUpperCase();
     newGameCode[index] = newChar;
     setGameCode(newGameCode);
     
     if (inputRefs.current[index]) {
-      // Replace any existing character with the new character.
       inputRefs.current[index].value = newChar;
     }
     
-    // Move focus to the next input if the new character exists
     if (newChar && index < 3) {
       inputRefs.current[index + 1].focus();
       setFocusedIndex(index + 1);
@@ -294,5 +290,13 @@ export default function JoinGame() {
       </Card>
       <Toaster />
     </div>
+  );
+}
+
+export default function JoinGame() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <JoinGameContent />
+    </Suspense>
   );
 }
