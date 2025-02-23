@@ -29,6 +29,14 @@ export default function JoinGame() {
   const maxUsernameLength = 20;
 
   useEffect(() => {
+    // Focus the first input box when component mounts
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+      setFocusedIndex(0);
+    }
+  }, []);
+
+  useEffect(() => {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
@@ -59,15 +67,35 @@ export default function JoinGame() {
     }
   }, [searchParams]);
 
+  // Updated handleInput: always replace the content in the box with the new input.
   const handleInput = (index, value) => {
     const newGameCode = [...gameCode];
-    const upperValue = value.toUpperCase();
-    newGameCode[index] = upperValue;
+    // Always take the last character entered and force it to uppercase.
+    const newChar = value.slice(-1).toUpperCase();
+    newGameCode[index] = newChar;
     setGameCode(newGameCode);
     
-    if (upperValue.length === 1 && index < 3) {
+    if (inputRefs.current[index]) {
+      // Replace any existing character with the new character.
+      inputRefs.current[index].value = newChar;
+    }
+    
+    // Move focus to the next input if the new character exists
+    if (newChar && index < 3) {
       inputRefs.current[index + 1].focus();
       setFocusedIndex(index + 1);
+    } else if (!newChar && index > 0) {
+      inputRefs.current[index - 1].focus();
+      setFocusedIndex(index - 1);
+    }
+  };
+
+  const handleKeyDown = (e, index) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (gameCode.join('').length === 4) {
+        handleVerifyCode();
+      }
     }
   };
 
@@ -210,6 +238,7 @@ export default function JoinGame() {
                       type="text"
                       maxLength={1}
                       onInput={(e) => handleInput(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, index)}
                       onFocus={() => handleFocus(index)}
                       className={cn(
                         "w-16 h-20 text-center text-2xl font-bold",
