@@ -1,3 +1,6 @@
+"use client";
+
+
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -158,7 +161,19 @@ export default function LandingPage() {
       </section>
 
       {/* Scroll Indicator - Removed opacity transition */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-50" id="scrollIndicator">
+      <div 
+        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-50 cursor-pointer" 
+        id="scrollIndicator"
+        onClick={() => {
+          const currentPosition = window.scrollY;
+          const windowHeight = window.innerHeight;
+          const nextSectionPosition = Math.ceil((currentPosition + windowHeight) / windowHeight) * windowHeight;
+          window.scrollTo({
+            top: nextSectionPosition,
+            behavior: 'smooth'
+          });
+        }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"
