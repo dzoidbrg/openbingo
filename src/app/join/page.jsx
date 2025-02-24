@@ -1,5 +1,7 @@
-'use client';
+"use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useRef, useState, useEffect, Suspense } from 'react';
 import { account, getOrCreateAnonymousSession, databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, functions } from '@/lib/appwrite';
@@ -8,9 +10,9 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from 'framer-motion';
 
 function JoinGameContent() {
   const { toast } = useToast();
@@ -72,11 +74,11 @@ function JoinGameContent() {
     const newChar = value.slice(-1).toUpperCase();
     newGameCode[index] = newChar;
     setGameCode(newGameCode);
-    
+
     if (inputRefs.current[index]) {
       inputRefs.current[index].value = newChar;
     }
-    
+
     if (newChar && index < 3) {
       inputRefs.current[index + 1].focus();
       setFocusedIndex(index + 1);
@@ -111,7 +113,7 @@ function JoinGameContent() {
         const payload = JSON.stringify({ gameCode: code });
         const result = await functions.createExecution('67b741820010d7638006', payload);
         const response = JSON.parse(result.responseBody);
-        
+
         if (response.success && response.game) {
           setStep('username');
           setError('');
@@ -197,34 +199,23 @@ function JoinGameContent() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4" suppressHydrationWarning>
-      <Card className="w-full max-w-md p-6 shadow-lg">
-        <CardContent>
-          {statusMessage && (
-            <div className={cn(
-              "p-4 mb-4 rounded-md",
-              messageType === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-            )}>
-              {statusMessage}
-            </div>
-          )}
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center"
-          >
-            Join the fun!
-          </motion.h1>
-
-          <AnimatePresence mode="wait">
+    <div className="relative overflow-x-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-sm" />
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+        <Card className="w-full max-w-md p-6 shadow-xl bg-card/50 backdrop-blur-sm border-muted/20">
+          <CardContent className="space-y-6">
+            {statusMessage && (
+              <div className={cn(
+                "p-4 mb-4 rounded-md text-center",
+                messageType === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              )}>
+                {statusMessage}
+              </div>
+            )}
+            <h1 className="text-4xl font-bold tracking-tighter text-primary text-center">Join the Fun!</h1>
             {step === 'code' ? (
-              <motion.div
-                key="code-step"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
+              <div className="space-y-6">
                 <p className="text-lg text-muted-foreground text-center">Enter your game code</p>
                 <div className="flex justify-center gap-2">
                   {[0, 1, 2, 3].map((index) => (
@@ -237,10 +228,8 @@ function JoinGameContent() {
                       onKeyDown={(e) => handleKeyDown(e, index)}
                       onFocus={() => handleFocus(index)}
                       className={cn(
-                        "w-16 h-20 text-center text-2xl font-bold",
-                        "bg-card border-2",
-                        "focus:ring-2 focus:ring-primary",
-                        "transform transition-all duration-200",
+                        "w-20 h-24 text-center text-2xl font-bold bg-card border-2",
+                        "focus:ring-2 focus:ring-primary transition-all duration-200",
                         focusedIndex === index ? "scale-110 border-primary" : "border-input"
                       )}
                     />
@@ -253,15 +242,9 @@ function JoinGameContent() {
                 >
                   {isLoading ? "Verifying..." : "Next"}
                 </Button>
-              </motion.div>
+              </div>
             ) : (
-              <motion.div
-                key="username-step"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
+              <div className="space-y-6">
                 <p className="text-lg text-muted-foreground text-center">Choose your username</p>
                 <div className="relative">
                   <Input
@@ -283,11 +266,11 @@ function JoinGameContent() {
                 >
                   {isLoading ? "Joining..." : "Join Game"}
                 </Button>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
       <Toaster />
     </div>
   );

@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from "next/font/google";
-import { ModeToggle } from "@/components/mode-toggle";
+import { Navbar } from "@/components/ui/navbar";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,12 +21,14 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen bg-background font-sans antialiased">
-            <div className="fixed top-4 right-4 z-50">
-              <ModeToggle />
+          <div className="min-h-screen bg-background font-sans antialiased relative">
+            <div className="fixed top-0 left-0 right-0 z-50 bg-background">
+              <Navbar />
             </div>
-            {children}
-          </main>
+            <main className="pt-16">
+              {children}
+            </main>
+          </div>
         </ThemeProvider>
       </body>
     </html>

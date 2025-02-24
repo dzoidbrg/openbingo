@@ -259,131 +259,84 @@ export default function CreateGame() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-8">
       <Card className="w-full max-w-2xl shadow-lg">
         <CardContent className="p-6">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center"
-          >
-            Create Game
-          </motion.h1>
+          <div className="flex items-center gap-3 p-4 mb-4 text-sm border rounded-lg bg-yellow-500/15 text-yellow-600 border-yellow-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p>All games will be automatically deleted after 24 hours of inactivity.</p>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center">Create Game</h1>
 
-          <AnimatePresence mode="wait">
-            {step === 'form' ? (
-              <motion.form
-                key="create-form"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-                onSubmit={handleCreateGame}
-              >
-                <div className="space-y-2">
-                  <label className="block text-lg font-medium text-foreground">
-                    Board Size
-                  </label>
-                  <Select value={boardSize.toString()} onValueChange={handleBoardSizeChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select board size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 x 3</SelectItem>
-                      <SelectItem value="4">4 x 4</SelectItem>
-                      <SelectItem value="5">5 x 5</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          {step === 'form' ? (
+            <form className="space-y-6" onSubmit={handleCreateGame}>
+              <div className="space-y-2">
+                <label className="block text-lg font-medium text-foreground">Board Size</label>
+                <Select value={boardSize.toString()} onValueChange={handleBoardSizeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select board size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 x 3</SelectItem>
+                    <SelectItem value="4">4 x 4</SelectItem>
+                    <SelectItem value="5">5 x 5</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="threshold" className="block text-lg font-medium text-foreground">
-                      Voting Threshold (%)
-                    </label>
-                    <div className="relative group">
-                      <div className="cursor-help text-muted-foreground">ⓘ</div>
-                      <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
-                        The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
-                      </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="threshold" className="block text-lg font-medium text-foreground">Voting Threshold (%)</label>
+                  <div className="relative group">
+                    <div className="cursor-help text-muted-foreground">ⓘ</div>
+                    <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
+                      The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
                     </div>
                   </div>
-                  <Input
-                    type="number"
-                    id="threshold"
-                    min="1"
-                    max="100"
-                    defaultValue="50"
-                  />
                 </div>
+                <Input type="number" id="threshold" min="1" max="100" defaultValue="50" />
+              </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-lg font-medium text-foreground">
-                      Bingo Events ({events.length}/{maxEvents})
-                    </label>
-                    <Button
-                      onClick={handleAddEvent}
-                      disabled={events.length >= maxEvents}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      Add Event
-                    </Button>
-                  </div>
-                  <div className="space-y-4">
-                    {events.map((event, index) => (
-                      <Input
-                        key={index}
-                        value={event}
-                        onChange={(e) => handleEventChange(index, e.target.value)}
-                        placeholder={`Event ${index + 1}`}
-                      />
-                    ))}
-                  </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-lg font-medium text-foreground">Bingo Events ({events.length}/{maxEvents})</label>
+                  <Button onClick={handleAddEvent} disabled={events.length >= maxEvents} variant="secondary" size="sm">Add Event</Button>
                 </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}
-                >
-                  {isLoading ? "Creating..." : "Create Game"}
-                </Button>
-              </motion.form>
-            ) : (
-              <motion.form
-                key="username-form"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-                onSubmit={handleJoinAsHost}
-              >
-                <div className="space-y-2">
-                  <label className="block text-lg font-medium text-foreground">
-                    Enter your username (Host)
-                  </label>
-                  <div className="relative">
+                <div className="space-y-4">
+                  {events.map((event, index) => (
                     <Input
-                      value={username}
-                      onChange={handleUsernameChange}
-                      placeholder="Your username"
-                      maxLength={maxUsernameLength}
-                      className="pr-16"
+                      key={index}
+                      value={event}
+                      onChange={(e) => handleEventChange(index, e.target.value)}
+                      placeholder={`Event ${index + 1}`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      {charCount}/{maxUsernameLength}
-                    </span>
-                  </div>
+                  ))}
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={!username.trim() || !userId || isLoading}
-                >
-                  {isLoading ? "Joining..." : "Join as Host"}
-                </Button>
-              </motion.form>
-            )}
-          </AnimatePresence>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}>
+                {isLoading ? "Creating..." : "Create Game"}
+              </Button>
+            </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleJoinAsHost}>
+              <div className="space-y-2">
+                <label className="block text-lg font-medium text-foreground">Enter your username (Host)</label>
+                <div className="relative">
+                  <Input
+                    value={username}
+                    onChange={handleUsernameChange}
+                    placeholder="Your username"
+                    maxLength={maxUsernameLength}
+                    className="pr-16"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    {charCount}/{maxUsernameLength}
+                  </span>
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={!username.trim() || !userId || isLoading}>
+                {isLoading ? "Joining..." : "Join as Host"}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
       <Toaster />
