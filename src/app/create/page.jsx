@@ -1,20 +1,16 @@
 'use client';
 
-import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { account, createGame, getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
+import { getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
+import dotenv from 'dotenv';
 
-const FUNCTION_IDS = {
-  CREATE_GAME: '67b74156001710462423',
-  JOIN_GAME: '67b713e9000667794adc'
-};
+dotenv.config();
 
 export default function CreateGame() {
   const [statusMessage, setStatusMessage] = useState('');
@@ -147,7 +143,7 @@ export default function CreateGame() {
       };
 
       const response = await functions.createExecution(
-        FUNCTION_IDS.CREATE_GAME,
+        process.env.APPWRITE_FUNCTION_CREATE_GAME_ID,
         JSON.stringify(payload)
       );
 
@@ -227,7 +223,7 @@ export default function CreateGame() {
       };
 
       const response = await functions.createExecution(
-        FUNCTION_IDS.JOIN_GAME,
+        process.env.APPWRITE_FUNCTION_JOIN_GAME_ID,
         JSON.stringify(joinPayload)
       );
 

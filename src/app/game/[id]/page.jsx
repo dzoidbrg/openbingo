@@ -13,6 +13,9 @@ import {
 } from '@/lib/appwrite';
 import { Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export default function GamePage() {
   const { id: gameId } = useParams(); // Get dynamic id from router
@@ -138,7 +141,7 @@ export default function GamePage() {
       const payload = JSON.stringify({
         gameId: game.$id
       });
-      await functions.createExecution('67b8f901000f4dce9aae', payload);
+      await functions.createExecution(process.env.APPWRITE_FUNCTION_START_GAME_ID, payload);
     } catch (err) {
       console.error('Error starting game:', err);
       // Show error message to user

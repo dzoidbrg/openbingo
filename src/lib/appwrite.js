@@ -1,8 +1,11 @@
 import { Client, Account, Databases, Storage, Functions } from 'appwrite';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '67b4bca9001e13fd56e8');
+  .setEndpoint(process.env.APPWRITE_ENDPOINT)
+  .setProject(process.env.APPWRITE_PROJECT_ID);
 
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -10,21 +13,18 @@ export const storage = new Storage(client);
 export const functions = new Functions(client);
 
 // Database constants
-export const BINGO_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '67b5bce200233eec2c46';
-export const GAMES_COLLECTION_ID = '67b5bd0d001f0c97796f';
-export const PLAYERS_COLLECTION_ID = '67b5bd050023f4aa24fb';
+export const BINGO_DATABASE_ID = process.env.APPWRITE_DATABASE_ID;
+export const GAMES_COLLECTION_ID = process.env.APPWRITE_COLLECTION_GAMES_ID;
+export const PLAYERS_COLLECTION_ID = process.env.APPWRITE_COLLECTION_PLAYERS_ID;
 
-// Expose a realtime subscription helper following the docs.
 export const subscribeRealtime = (channel, callback) => {
   return client.subscribe(channel, callback);
 };
 
-// Optional: if you run a custom realtime endpoint, you can set it like so:
 export const setRealtimeEndpoint = (endpoint) => {
   client.setEndpointRealtime(endpoint);
 };
 
-// Helper functions for common Appwrite operations
 export const createGame = async (gameData) => {
   try {
     const payload = JSON.stringify({

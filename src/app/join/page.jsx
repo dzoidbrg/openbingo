@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useRef, useState, useEffect, Suspense } from 'react';
-import { account, getOrCreateAnonymousSession, databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, functions } from '@/lib/appwrite';
-import { Query } from 'appwrite';
+import { getOrCreateAnonymousSession, functions } from '@/lib/appwrite';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from 'framer-motion';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 function JoinGameContent() {
   const { toast } = useToast();
@@ -31,7 +30,6 @@ function JoinGameContent() {
   const maxUsernameLength = 20;
 
   useEffect(() => {
-    // Focus the first input box when component mounts
     if (inputRefs.current[0]) {
       inputRefs.current[0].focus();
       setFocusedIndex(0);
@@ -111,7 +109,7 @@ function JoinGameContent() {
       setIsLoading(true);
       try {
         const payload = JSON.stringify({ gameCode: code });
-        const result = await functions.createExecution('67b741820010d7638006', payload);
+        const result = await functions.createExecution(process.env.APPWRITE_FUNCTION_SEARCH_GAME_ID, payload);
         const response = JSON.parse(result.responseBody);
 
         if (response.success && response.game) {
@@ -144,7 +142,7 @@ function JoinGameContent() {
       setIsLoading(true);
       try {
         const searchPayload = JSON.stringify({ gameCode: code });
-        const searchResult = await functions.createExecution('67b741820010d7638006', searchPayload);
+        const searchResult = await functions.createExecution(process.env.APPWRITE_FUNCTION_SEARCH_GAME_ID, searchPayload);
         const searchResponse = JSON.parse(searchResult.responseBody);
 
         if (!searchResponse.success || !searchResponse.game) {
@@ -162,7 +160,7 @@ function JoinGameContent() {
           userId: userId,
           username: username.trim()
         });
-        const joinResult = await functions.createExecution('67b713e9000667794adc', joinPayload);
+        const joinResult = await functions.createExecution(process.env.APPWRITE_FUNCTION_JOIN_GAME_ID, joinPayload);
         const joinResponse = JSON.parse(joinResult.responseBody);
 
         if (!joinResponse.success) {

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { databases, BINGO_DATABASE_ID, GAMES_COLLECTION_ID, getOrCreateAnonymousSession } from '@/lib/appwrite';
-import { Query } from 'appwrite';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
