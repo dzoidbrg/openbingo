@@ -9,9 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 function JoinGameContent() {
   const { toast } = useToast();

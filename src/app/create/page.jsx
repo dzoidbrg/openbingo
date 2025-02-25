@@ -8,9 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export default function CreateGame() {
   const [statusMessage, setStatusMessage] = useState('');
