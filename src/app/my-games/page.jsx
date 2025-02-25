@@ -36,13 +36,23 @@ export default function MyGames() {
     try {
       const response = await databases.listDocuments(
         BINGO_DATABASE_ID,
-        GAMES_COLLECTION_ID,
-        [
-          Query.search('players', currentUserId)
-        ]
+        GAMES_COLLECTION_ID
       );
 
-      setGames(response.documents);
+      // Filter games where the user is a participant
+      const userGames = response.documents.filter(game => {
+        return game.players.some(player => {
+          try {
+            const playerData = typeof player === 'string' ? JSON.parse(player) : player;
+            return playerData.userId === currentUserId;
+          } catch (e) {
+            console.error('Error parsing player data:', e);
+            return false;
+          }
+        });
+      });
+
+      setGames(userGames);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching games:', error);

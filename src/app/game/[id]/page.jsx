@@ -25,7 +25,27 @@ export default function GamePage() {
   const [showGameCode, setShowGameCode] = useState(true);
   const [showExpandedCode, setShowExpandedCode] = useState(false);
   const [copyStatus, setCopyStatus] = useState('Copy Link');
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
   const { toast } = useToast();
+
+  // Window focus detection
+  useEffect(() => {
+    const handleFocus = () => setIsWindowFocused(true);
+    const handleBlur = () => setIsWindowFocused(false);
+    
+    // Set initial state
+    setIsWindowFocused(document.hasFocus());
+    
+    // Add event listeners
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
 
   useEffect(() => {
     const initSession = async () => {
@@ -200,22 +220,6 @@ export default function GamePage() {
     }
   }, [game, userId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error || !game) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-red-500">{error || 'Game not found'}</div>
-      </div>
-    );
-  }
-
   const handleShare = async () => {
     const joinUrl = `${window.location.origin}/join?code=${game.gameCode}`;
     try {
@@ -229,8 +233,67 @@ export default function GamePage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+        </div>
+        <div className="mb-6 p-6 bg-secondary/10 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-6 bg-gray-200 rounded animate-pulse w-full"></div>
+              ))}
+            </div>
+            <div className="space-y-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded animate-pulse w-full"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !game) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-red-500">{error || 'Game not found'}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4" suppressHydrationWarning>
+      {/* Window Focus Indicator */}
+      <div
+        className={cn(
+          'fixed inset-0 pointer-events-none transition-opacity duration-300 z-50',
+          isWindowFocused ? 'opacity-0' : 'opacity-100'
+        )}
+      >
+        <div className="absolute inset-[1px] border-4 border-dashed border-primary/30">
+          <div className="absolute -left-1 -top-1 w-8 h-8 border-l-4 border-t-4 border-primary"></div>
+          <div className="absolute -right-1 -top-1 w-8 h-8 border-r-4 border-t-4 border-primary"></div>
+          <div className="absolute -left-1 -bottom-1 w-8 h-8 border-l-4 border-b-4 border-primary"></div>
+          <div className="absolute -right-1 -bottom-1 w-8 h-8 border-r-4 border-b-4 border-primary"></div>
+        </div>
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <h2 className="text-primary text-2xl font-bold">Page Out of Focus</h2>
+          <p className="text-primary/80 text-center max-w-md px-4">
+            Some data might not load while the page isn't focused.
+          </p>
+        </div>
+      </div>
+
       {/* Top Bar */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
