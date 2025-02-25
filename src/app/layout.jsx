@@ -1,4 +1,4 @@
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme-provider";
 import { Inter } from "next/font/google";
 import { Navbar } from "@/components/ui/navbar";
 import "./globals.css";
@@ -13,7 +13,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <script
+          defer
+          src={process.env.UMAMI_SCRIPT_URL}
+          data-website-id={process.env.UMAMI_WEBSITE_ID}
+        ></script>
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
