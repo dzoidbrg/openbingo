@@ -275,12 +275,7 @@ export default function GamePage() {
           isWindowFocused ? 'opacity-0' : 'opacity-100'
         )}
       >
-        <div className="absolute inset-[1px] border-4 border-dashed border-primary/30">
-          <div className="absolute -left-1 -top-1 w-8 h-8 border-l-4 border-t-4 border-primary"></div>
-          <div className="absolute -right-1 -top-1 w-8 h-8 border-r-4 border-t-4 border-primary"></div>
-          <div className="absolute -left-1 -bottom-1 w-8 h-8 border-l-4 border-b-4 border-primary"></div>
-          <div className="absolute -right-1 -bottom-1 w-8 h-8 border-r-4 border-b-4 border-primary"></div>
-        </div>
+
         <div className="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
