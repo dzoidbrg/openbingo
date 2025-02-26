@@ -75,7 +75,7 @@ export default function MyGames() {
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
                     <TableHead>Game Code</TableHead>
                     <TableHead>Players</TableHead>
                     <TableHead>Events</TableHead>
@@ -131,12 +131,12 @@ export default function MyGames() {
           <CardContent>
             {games.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">
-                You haven't joined any games yet!
+                Either you have not joined any games yet, or your session has expired!
               </p>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
                     <TableHead>Game Code</TableHead>
                     <TableHead>Players</TableHead>
                     <TableHead>Events</TableHead>
