@@ -252,9 +252,12 @@ export default function CreateGame() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-8">
       <Card className="w-full max-w-2xl shadow-lg">
         <CardContent className="p-6">
-          <div className="flex items-center gap-3 p-4 mb-4 text-sm border rounded-lg bg-yellow-500/15 text-yellow-600 border-yellow-500/20">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <p>All games will be automatically deleted after 24 hours of inactivity.</p>
+          <div className="flex gap-3 p-4 mb-4 text-sm border rounded-lg bg-yellow-500/15 text-yellow-600 border-yellow-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div className="space-y-1">
+              <p>All games will be automatically deleted after 24-48 hours of inactivity.</p>
+              <p className="text-xs text-muted-foreground">This can vary based on when the game is created.</p>
+            </div>
           </div>
           <h1 className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center">Create Game</h1>
 
