@@ -1,0 +1,299 @@
+{
+    "projectId": "67b4bca9001e13fd56e8",
+    "projectName": "OpenBingo",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": false,
+                "phone": false,
+                "invites": false,
+                "anonymous": true,
+                "email-otp": false,
+                "magic-url": false,
+                "email-password": false
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
+    "functions": [
+        {
+            "$id": "67b713e9000667794adc",
+            "execute": [
+                "users"
+            ],
+            "name": "joinGame",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "joinGameFunction.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/joinGame"
+        },
+        {
+            "$id": "67b74156001710462423",
+            "execute": [
+                "users"
+            ],
+            "name": "Create Game",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "createGameFunction.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/Create Game"
+        },
+        {
+            "$id": "67b741820010d7638006",
+            "execute": [
+                "users"
+            ],
+            "name": "Search for Game",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "searchGameFunction.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/Search for Game"
+        },
+        {
+            "$id": "voteEvent",
+            "execute": [
+                "any"
+            ],
+            "name": "voteEvent",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-22",
+            "scopes": [
+                "users.read"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "voteEventFunction.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/voteEvent"
+        },
+        {
+            "$id": "67b8f901000f4dce9aae",
+            "execute": [
+                "users"
+            ],
+            "name": "startGame",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "startGameFunction.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/startGame"
+        },
+        {
+            "$id": "67bf56b900076f196379",
+            "execute": [],
+            "name": "Delete Games // WORKER",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "0 0 * * *",
+            "timeout": 15,
+            "entrypoint": "deleteGames.js",
+            "commands": "npm install",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/Delete Games // WORKER"
+        }
+    ],
+    "databases": [
+        {
+            "$id": "67b5bce200233eec2c46",
+            "name": "bingo",
+            "enabled": true
+        }
+    ],
+    "collections": [
+        {
+            "$id": "67b5bd050023f4aa24fb",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")"
+            ],
+            "databaseId": "67b5bce200233eec2c46",
+            "name": "players",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "gameId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null
+                },
+                {
+                    "key": "joinedAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "username",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "67b5bd0d001f0c97796f",
+            "$permissions": [],
+            "databaseId": "67b5bce200233eec2c46",
+            "name": "games",
+            "enabled": true,
+            "documentSecurity": true,
+            "attributes": [
+                {
+                    "key": "creatorId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null
+                },
+                {
+                    "key": "boardSize",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "min": 0,
+                    "max": 25,
+                    "default": null
+                },
+                {
+                    "key": "events",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 1000,
+                    "default": null
+                },
+                {
+                    "key": "votingThreshold",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "min": 0,
+                    "max": 100,
+                    "default": null
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10,
+                    "default": null
+                },
+                {
+                    "key": "gameCode",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 4,
+                    "default": null
+                },
+                {
+                    "key": "players",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 1000000,
+                    "default": null
+                },
+                {
+                    "key": "votes",
+                    "type": "integer",
+                    "required": false,
+                    "array": true,
+                    "min": 0,
+                    "max": 100,
+                    "default": null
+                },
+                {
+                    "key": "verifiedEvents",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 1000,
+                    "default": null
+                },
+                {
+                    "key": "host",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null
+                }
+            ],
+            "indexes": []
+        }
+    ]
+}
