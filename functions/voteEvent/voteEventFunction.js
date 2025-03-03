@@ -59,7 +59,8 @@ const database = new Databases(client);
     console.log(JSON.parse(game.players[0]));
     // Validate the player is in the game
     console.log(game.players)
-    if (!(JSON.parse(game.players)?.some(player => JSON.parse(player.userId) === userId))) {
+    game = JSON.parse(game);
+    if (!(game.players?.some(player => JSON.parse(player.userId) === userId))) {
       return res.json({
         success: false,
         error: 'User is not a participant in this game.'
