@@ -109,18 +109,48 @@ export const getGamePlayers = async (gameId) => {
   }
 };
 
-// Helper function to get or create anonymous session
+// Add a cache for the current session to prevent excessive API calls
+let cachedSession = null;
+let sessionPromise = null;
+
 export const getOrCreateAnonymousSession = async () => {
-  try {
-    const currentSession = await account.get();
-    return currentSession;
-  } catch (error) {
-    try {
-      const newSession = await account.createAnonymousSession();
-      return newSession;
-    } catch (error) {
-      console.error('Error creating anonymous session:', error);
-      throw error;
-    }
+  // Return cached session if it exists
+  if (cachedSession) {
+    return cachedSession;
   }
+  
+  // If a request is already in progress, wait for it
+  if (sessionPromise) {
+    return sessionPromise;
+  }
+  
+  // Create a new promise for the session request
+  sessionPromise = (async () => {
+    try {
+      // Try to get the current session
+      const session = await account.getSession('current');
+      cachedSession = session;
+      return session;
+    } catch (error) {
+      // If there's no current session, create an anonymous one
+      try {
+        const newSession = await account.createAnonymousSession();
+        cachedSession = newSession;
+        return newSession;
+      } catch (createError) {
+        console.error('Failed to create anonymous session:', createError);
+        throw createError;
+      }
+    } finally {
+      // Clear the promise so future calls will make a new request if needed
+      sessionPromise = null;
+    }
+  })();
+  
+  return sessionPromise;
+};
+
+// Optional: Function to explicitly clear the session cache if needed
+export const clearSessionCache = () => {
+  cachedSession = null;
 };

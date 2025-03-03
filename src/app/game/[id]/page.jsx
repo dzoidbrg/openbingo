@@ -11,7 +11,7 @@ import {
   getOrCreateAnonymousSession,
   functions
 } from '@/lib/appwrite';
-import { Share2 } from 'lucide-react';
+import { Share2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dotenv from 'dotenv';
 
@@ -29,6 +29,8 @@ export default function GamePage() {
   const [showExpandedCode, setShowExpandedCode] = useState(false);
   const [copyStatus, setCopyStatus] = useState('Copy Link');
   const [isWindowFocused, setIsWindowFocused] = useState(true);
+  const [startingGame, setStartingGame] = useState(false);
+  const [votingEvents, setVotingEvents] = useState({});
   const { toast } = useToast();
 
   // Window focus detection
@@ -138,27 +140,90 @@ export default function GamePage() {
 
   const handleStartGame = async () => {
     try {
+      setStartingGame(true);
+      toast({
+        title: "Starting Game",
+        description: "Preparing game boards for all players...",
+      });
+      
       const payload = JSON.stringify({
         gameId: game.$id
       });
-      await functions.createExecution(process.env.APPWRITE_FUNCTION_START_GAME_ID, payload);
+      const result = await functions.createExecution(process.env.APPWRITE_FUNCTION_START_GAME_ID, payload);
+      
+      // Check if the function executed successfully
+      const response = JSON.parse(result.response);
+      if (response.success) {
+        toast({
+          title: "Game Started",
+          description: "The game has officially begun! Good luck!",
+          variant: "success"
+        });
+      } else {
+        toast({
+          title: "Failed to Start Game",
+          description: response.error || "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (err) {
       console.error('Error starting game:', err);
-      // Show error message to user
-      setError('Failed to start game. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to start the game. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setStartingGame(false);
     }
   };
 
   const handleVote = async (eventIndex) => {
     try {
+      // Set loading state for this specific event
+      setVotingEvents(prev => ({ ...prev, [eventIndex]: true }));
+      
       const payload = JSON.stringify({
         gameId: game.$id,
         eventIndex,
         userId
       });
-      await functions.createExecution('voteEvent', payload);
+      
+      // Show voting toast
+      toast({
+        title: "Submitting Vote",
+        description: "Your vote is being processed..."
+      });
+      
+      // Use the voteEvent cloud function
+      const result = await functions.createExecution('voteEvent', payload);
+      
+      // Parse response
+      const response = JSON.parse(result.response);
+      
+      if (response.success) {
+        toast({
+          title: "Vote Registered",
+          description: "Your vote has been recorded",
+          variant: "success"
+        });
+      } else {
+        toast({
+          title: "Vote Failed",
+          description: response.error || "Failed to register vote",
+          variant: "destructive"
+        });
+      }
     } catch (err) {
       console.error('Error voting for event:', err);
+      toast({
+        title: "Error",
+        description: "Failed to register vote. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      // Clear loading state
+      setVotingEvents(prev => ({ ...prev, [eventIndex]: false }));
     }
   };
 
@@ -473,9 +538,19 @@ export default function GamePage() {
                 </p>
                 <button
                   onClick={handleStartGame}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all transform hover:scale-105"
+                  disabled={startingGame}
+                  className={cn(
+                    "px-6 py-2 bg-primary text-white rounded-lg transition-all",
+                    startingGame ? "opacity-80 cursor-not-allowed" : "hover:bg-primary/90 transform hover:scale-105"
+                  )}
                 >
-                  Start Game
+                  {startingGame ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Starting...
+                    </span>
+                  ) : (
+                    "Start Game"
+                  )}
                 </button>
               </div>
             ) : (
@@ -501,7 +576,7 @@ export default function GamePage() {
                   className={cn(
                     'aspect-square p-4 flex items-center justify-center text-center cursor-pointer rounded-lg',
                     game.verifiedEvents && game.verifiedEvents.includes(index)
-                      ? 'bg-green-300'
+                      ? 'bg-green-300 hover:bg-green-400 transition-colors'
                       : 'bg-background border-2 border-primary hover:bg-primary/5 transition-colors'
                   )}
                 >
@@ -520,20 +595,52 @@ export default function GamePage() {
                 const totalPlayers = (game.players || []).length;
                 const requiredVotes = Math.ceil(totalPlayers * game.votingThreshold / 100);
                 const verified = game.verifiedEvents && game.verifiedEvents.includes(index);
+                const isVoting = votingEvents[index];
+                
+                // Calculate progress percentage
+                const progressPercentage = Math.min(100, (voteCount / requiredVotes) * 100);
+                
                 return (
-                  <div key={index} className="flex items-center justify-between border p-2 rounded">
-                    <div>
+                  <div key={index} className={cn(
+                    "flex items-center justify-between border p-3 rounded",
+                    verified ? "bg-green-100 border-green-300" : "hover:bg-accent"
+                  )}>
+                    <div className="flex-1 mr-4">
                       <p className="font-medium">{event}</p>
                       <p className="text-xs text-muted-foreground">
-                        {verified ? 'Verified' : `${voteCount} / ${requiredVotes} votes`}
+                        {verified ? (
+                          <span className="text-green-700">Verified ✓</span>
+                        ) : (
+                          <span>{voteCount} / {requiredVotes} votes</span>
+                        )}
                       </p>
+                      {!verified && (
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div 
+                            className="bg-blue-600 h-1.5 rounded-full" 
+                            style={{ width: `${progressPercentage}%` }}
+                          ></div>
+                        </div>
+                      )}
                     </div>
                     {!verified && (
                       <button
                         onClick={() => handleVote(index)}
-                        className="px-3 py-1 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
+                        disabled={isVoting}
+                        className={cn(
+                          "px-3 py-1 rounded transition-colors shrink-0 min-w-[70px] flex justify-center items-center",
+                          isVoting ? 
+                            "bg-secondary/50 text-secondary-foreground/50 cursor-not-allowed" : 
+                            "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        )}
                       >
-                        Vote
+                        {isVoting ? (
+                          <span className="flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Voting
+                          </span>
+                        ) : (
+                          "Vote"
+                        )}
                       </button>
                     )}
                   </div>
@@ -544,36 +651,66 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Events Preview */}
-      <div className="mt-8 p-6 bg-card rounded-lg shadow-sm border border-border">
-        <h2 className="text-xl font-semibold mb-4">All Bingo Events</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {game.events.map((event, index) => (
-            <div key={index} className="p-3 bg-background rounded border border-border">
-              <span className="text-muted-foreground text-sm mr-2">#{index + 1}</span>
-              <span>{event}</span>
-            </div>
-          ))}
+      {/* Events Preview - Only show during waiting phase */}
+      {game.status === 'waiting' && (
+        <div className="mt-8 p-6 bg-card rounded-lg shadow-sm border border-border">
+          <h2 className="text-xl font-semibold mb-4">All Bingo Events</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {game.events.map((event, index) => (
+              <div key={index} className="p-3 bg-background rounded border border-border">
+                <span className="text-muted-foreground text-sm mr-2">#{index + 1}</span>
+                <span>{event}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal for event details */}
       {modalEventIndex !== null && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-card p-6 rounded-lg w-80">
-            <h3 className="text-xl font-bold mb-4">Players for Event {modalEventIndex + 1}</h3>
-            <ul className="mb-4">
-              {getPlayersForEvent(modalEventIndex).length > 0 ? (
-                getPlayersForEvent(modalEventIndex).map((player, idx) => (
-                  <li key={idx}>{player.username}</li>
-                ))
-              ) : (
-                <li className="text-sm text-muted-foreground">No votes yet</li>
+          <div className="bg-card p-6 rounded-lg w-96 max-w-[90vw]">
+            <h3 className="text-xl font-bold mb-4">{game.events[modalEventIndex]}</h3>
+            <div className="mb-6">
+              {game.status === 'started' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      {game.verifiedEvents && game.verifiedEvents.includes(modalEventIndex) 
+                        ? 'Event verified' 
+                        : 'Vote to confirm this event happened'}
+                    </span>
+                  </div>
+                  
+                  {!(game.verifiedEvents && game.verifiedEvents.includes(modalEventIndex)) && (
+                    <button
+                      onClick={() => {
+                        handleVote(modalEventIndex);
+                        closeModal();
+                      }}
+                      disabled={votingEvents[modalEventIndex]}
+                      className={cn(
+                        "w-full px-4 py-2 rounded transition-colors",
+                        votingEvents[modalEventIndex] ? 
+                          "bg-primary/50 text-white cursor-not-allowed" : 
+                          "bg-primary text-white hover:bg-primary/90"
+                      )}
+                    >
+                      {votingEvents[modalEventIndex] ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Voting...
+                        </span>
+                      ) : (
+                        "Vote For This Event"
+                      )}
+                    </button>
+                  )}
+                </div>
               )}
-            </ul>
+            </div>
             <button
               onClick={closeModal}
-              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+              className="w-full px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 transition-colors"
             >
               Close
             </button>

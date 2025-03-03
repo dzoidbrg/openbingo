@@ -58,10 +58,11 @@ const database = new Databases(client);
     console.log("Dumping player");
     console.log(JSON.parse(game.players[0]));
     // Validate the player is in the game
-    if (!game.players?.some(player => JSON.parse(player.userId) === userId)) {
+    console.log(game.players)
+    if (!(JSON.parse(game.players)?.some(player => JSON.parse(player.userId) === userId))) {
       return res.json({
         success: false,
-        error: 'User isa idan not a participant in this game.'
+        error: 'User is not a participant in this game.'
       });
     }
 
@@ -78,7 +79,6 @@ const database = new Databases(client);
     let votes = game.votes || [];
     let verifiedEvents = game.verifiedEvents || [];
 
-    // Initialize votes array if needed
     if (votes.length < game.events.length) {
       votes = new Array(game.events.length).fill(0);
     }
