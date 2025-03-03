@@ -66,7 +66,9 @@ const database = new Databases(client);
     
     // Validate user existence
     console.log(players)
-    if (!players.some(player => player.userId === userId)) {
+    const playerIds = new Set(players.map(player => player.userId));
+    const userExists = playerIds.has(userId);
+    if (!userExists) {
       return res.json({
         success: false,
         error: 'User is not a participant in this game.'
