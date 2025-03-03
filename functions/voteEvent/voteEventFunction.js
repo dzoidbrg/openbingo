@@ -68,6 +68,7 @@ const database = new Databases(client);
     console.log(players)
     const playerIds = new Set(players.map(player => player.userId));
     const userExists = playerIds.has(userId);
+    console.log(playerIds)
     if (!userExists) {
       return res.json({
         success: false,
