@@ -136,6 +136,7 @@ export default function GamePage() {
     (typeof currentPlayer === 'string' ? JSON.parse(currentPlayer).username : currentPlayer.username) 
     : 'Unknown';
 
+
   const isHost = game && game.creatorId === userId;
 
   const handleStartGame = async () => {

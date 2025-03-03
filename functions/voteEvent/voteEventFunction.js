@@ -53,7 +53,7 @@ export default async ({ req, res }) => {
       });
     }
 
-    // Process players - fix user validation by using session ID
+    // Process players array
     console.log("Game players:", game.players);
     
     // Fix: Check if the user is in the game by session ID from the headers
@@ -65,25 +65,48 @@ export default async ({ req, res }) => {
     console.log("User ID from payload:", userId);
     console.log("Session ID from JWT:", sessionId);
     
-    // Initialize a flag to check if the user exists
+    // Process and update the players array
+    let players = [];
+    let currentPlayerIndex = -1;
     let userExists = false;
     
-    // Loop through players and check both userId and sessionId
-    for (const playerJson of game.players) {
+    // Parse the players array and identify the current player
+    for (let i = 0; i < game.players.length; i++) {
+      const playerJson = game.players[i];
       try {
         const player = typeof playerJson === 'string' ? JSON.parse(playerJson) : playerJson;
         console.log("Checking player:", player);
         
-        // Accept either userId or sessionId match
+        // Initialize ticked array if it doesn't exist
+        if (!player.ticked) {
+          player.ticked = [];
+        }
+        
+        // Check if this is the current player
         if (player.userId === userId || 
             player.sessionId === userId ||
             player.userId === sessionId || 
             (sessionId && player.sessionId === sessionId)) {
           userExists = true;
-          break;
+          currentPlayerIndex = i;
+          
+          // Check if the event is already ticked for this player
+          if (player.ticked.includes(eventIndex)) {
+            return res.json({
+              success: false,
+              error: 'You have already voted for this event.'
+            });
+          }
+          
+          // Add event to player's ticked array
+          player.ticked.push(eventIndex);
         }
+        
+        // Add the processed player to the new array
+        players.push(typeof playerJson === 'string' ? JSON.stringify(player) : player);
       } catch (e) {
-        console.error("Error parsing player:", e);
+        console.error("Error processing player:", e);
+        players.push(playerJson); // Keep original player data if processing fails
       }
     }
     
@@ -91,6 +114,13 @@ export default async ({ req, res }) => {
       return res.json({
         success: false,
         error: 'User is not a participant in this game.'
+      });
+    }
+    
+    if (currentPlayerIndex === -1) {
+      return res.json({
+        success: false,
+        error: 'Failed to identify current player in the game.'
       });
     }
 
@@ -104,76 +134,67 @@ export default async ({ req, res }) => {
 
     console.log("User validation passed, processing vote");
 
-    // Handle duplicate votes with userVotes tracking
-    let userVotes = {};
-    try {
-      userVotes = game.userVotes ? 
-        (typeof game.userVotes === 'string' ? JSON.parse(game.userVotes) : game.userVotes) : {};
-    } catch (e) {
-      console.error("Error parsing userVotes:", e);
-      userVotes = {};
-    }
+    // Calculate votes for this event based on player ticks
+    const voteCounts = new Array(game.events.length).fill(0);
     
-    // Initialize event votes array if not exists
-    if (!userVotes[eventIndex]) {
-      userVotes[eventIndex] = [];
+    // Count votes for each event
+    for (const playerData of players) {
+      try {
+        const player = typeof playerData === 'string' ? JSON.parse(playerData) : playerData;
+        if (player.ticked && Array.isArray(player.ticked)) {
+          for (const tickedIndex of player.ticked) {
+            if (typeof tickedIndex === 'number' && tickedIndex >= 0 && tickedIndex < voteCounts.length) {
+              voteCounts[tickedIndex]++;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error counting votes:", e);
+      }
     }
-    
-    // Check if this user already voted
-    if (userVotes[eventIndex].includes(userId) || 
-        (sessionId && userVotes[eventIndex].includes(sessionId))) {
-      return res.json({
-        success: false,
-        error: 'You have already voted for this event.'
-      });
-    }
-    
-    // Record the vote
-    userVotes[eventIndex].push(userId);
-    
-    // Update vote count
-    let votes = game.votes || [];
-    if (votes.length < game.events.length) {
-      votes = new Array(game.events.length).fill(0);
-    }
-    votes[eventIndex] = userVotes[eventIndex].length;
     
     // Determine required votes based on the threshold percentage
-    const totalPlayers = (game.players || []).length;
+    const totalPlayers = players.length;
     const requiredVotes = Math.ceil(totalPlayers * game.votingThreshold / 100);
 
-    // Get existing verified events
+    // Get existing verified events or initialize
     let verifiedEvents = game.verifiedEvents || [];
     
     // If vote count meets the threshold, mark as verified
-    if (votes[eventIndex] >= requiredVotes && !verifiedEvents.includes(eventIndex)) {
+    if (voteCounts[eventIndex] >= requiredVotes && !verifiedEvents.includes(eventIndex)) {
       verifiedEvents.push(eventIndex);
     }
 
-    console.log(`Vote count: ${votes[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(eventIndex)}`);
-
-    // Update the document with optimistic concurrency control
+    console.log(`Vote count: ${voteCounts[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(eventIndex)}`);
+    console.log(`Updated player's ticked events:`, 
+      typeof players[currentPlayerIndex] === 'string' 
+        ? JSON.parse(players[currentPlayerIndex]).ticked 
+        : players[currentPlayerIndex].ticked
+    );
+    
+    // Update the document
     try {
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,
         process.env.GAMES_COLLECTION_ID,
         gameId,
         { 
-          votes, 
-          verifiedEvents, 
-          userVotes: JSON.stringify(userVotes)
+          players,
+          votes: voteCounts, 
+          verifiedEvents
         }
       );
 
-      console.log("Updated game document:", updatedGame);
+      console.log("Updated game document successfully");
       return res.json({ 
         success: true, 
         game: updatedGame,
-        voteCount: votes[eventIndex],
+        voteCount: voteCounts[eventIndex],
         requiredVotes,
         verified: verifiedEvents.includes(eventIndex)
       });
     } catch (updateError) {
+      console.error("Error updating document:", updateError);
       if (updateError.code === 409) {
         return res.json({
           success: false,
