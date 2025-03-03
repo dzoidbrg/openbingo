@@ -65,6 +65,7 @@ const database = new Databases(client);
     );
     
     // Validate user existence
+    console.log(players)
     if (!players.some(player => player.userId === userId)) {
       return res.json({
         success: false,
