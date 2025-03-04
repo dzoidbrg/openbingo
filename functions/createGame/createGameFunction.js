@@ -60,7 +60,7 @@ export default async ({ req, res, log, error }) => {
 
     // If a free space text is provided in the payload, use it, otherwise default to "FREE SPACE"
     if (addFreeSpace) {
-      gameData.freeSpaceText = payload.freeSpaceText || "FREE SPACE";
+      gameData.freeSpaceText = payload.freeSpaceText || "Free Space";
     }
 
     const game = await database.createDocument(
