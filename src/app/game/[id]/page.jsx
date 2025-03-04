@@ -242,41 +242,51 @@ export default function GamePage() {
     5: 'grid-cols-5'
   }[game?.boardSize] || 'grid-cols-3';
 
-  const getPlayersForEvent = (eventIndex) => {
-    return (game?.players || []).filter(player =>
-      player.ticked && player.ticked.includes(eventIndex)
-    );
-  };
-
   // Check for a win using the current user's personal board.
   const checkWinCondition = () => {
     if (!game || !game.boardSize || !game.players) return false;
-    const currentPlayer = game.players.find(player => player.userId === userId);
-    if (!currentPlayer || !currentPlayer.ticked) return false;
+    const currentPlayer = getCurrentPlayer();
+    if (!currentPlayer) return false;
+    
+    const playerData = typeof currentPlayer === 'string' ? JSON.parse(currentPlayer) : currentPlayer;
+    if (!playerData.ticked || !Array.isArray(playerData.ticked)) return false;
 
-    const size = game.boardSize;
+    const size = parseInt(game.boardSize);
     const board = Array.from({ length: size }, () => Array(size).fill(false));
-    currentPlayer.ticked.forEach(index => {
-      const row = Math.floor(index / size);
-      const col = index % size;
-      board[row][col] = true;
+    
+    playerData.ticked.forEach(index => {
+      if (index >= 0 && index < game.events.length) {
+        const row = Math.floor(index / size);
+        const col = index % size;
+        if (row < size && col < size) {
+          board[row][col] = true;
+        }
+      }
     });
 
+    // Check rows
     for (let i = 0; i < size; i++) {
       if (board[i].every(cell => cell)) return true;
     }
+    
+    // Check columns
     for (let j = 0; j < size; j++) {
       if (board.every(row => row[j])) return true;
     }
+    
+    // Check diagonals
     const mainDiagonal = Array(size).fill().every((_, i) => board[i][i]);
     const antiDiagonal = Array(size).fill().every((_, i) => board[i][size - 1 - i]);
+    
     return mainDiagonal || antiDiagonal;
   };
 
   useEffect(() => {
     if (game && userId && game.status === 'started' && checkWinCondition()) {
-      const currentPlayer = game.players.find(player => player.userId === userId);
-      const winner = currentPlayer ? currentPlayer.username : 'Unknown';
+      const currentPlayer = getCurrentPlayer();
+      const playerData = typeof currentPlayer === 'string' ? JSON.parse(currentPlayer) : currentPlayer;
+      const winner = playerData ? playerData.username : 'Unknown';
+      
       if (!game.winner) {
         databases.updateDocument(
           BINGO_DATABASE_ID,
@@ -300,6 +310,170 @@ export default function GamePage() {
       setCopyStatus('Failed to copy');
       setTimeout(() => setCopyStatus('Copy Link'), 2000);
     }
+  };
+
+  // Function to get the current player's board
+  const getPlayerBoard = () => {
+    if (!game || !userId) return null;
+    
+    const currentPlayer = getCurrentPlayer();
+    if (!currentPlayer) return null;
+    
+    const playerData = typeof currentPlayer === 'string' 
+      ? JSON.parse(currentPlayer) 
+      : currentPlayer;
+    
+    // If the player has a pre-generated board from startGame function, use it
+    if (playerData.board) {
+      return playerData.board;
+    }
+    
+    // If no pre-generated board, create a default board from the game's events
+    const boardSize = parseInt(game.boardSize);
+    const result = [];
+    
+    // Default board generation (fallback if no pre-generated board exists)
+    const needsFreeSpace = game.addFreeSpace;
+    const centerPos = Math.floor(boardSize * boardSize / 2);
+    
+    for (let i = 0; i < boardSize; i++) {
+      const row = [];
+      for (let j = 0; j < boardSize; j++) {
+        const cellIndex = i * boardSize + j;
+        
+        if (needsFreeSpace && cellIndex === centerPos) {
+          // Add free space in center
+          row.push(game.freeSpaceText || "FREE SPACE");
+        } else {
+          // Adjust event index if we've passed the center in a board with free space
+          const eventIndex = needsFreeSpace && cellIndex > centerPos 
+            ? cellIndex - 1 
+            : cellIndex;
+            
+          // Only add event if index is valid
+          if (eventIndex < game.events.length) {
+            row.push(game.events[eventIndex]);
+          } else {
+            row.push(""); // Empty cell if no event available
+          }
+        }
+      }
+      result.push(row);
+    }
+    
+    return result;
+  };
+
+  // Function to check if a cell is the free space
+  const isFreeSpace = (eventText) => {
+    return game?.addFreeSpace && 
+      (eventText === (game.freeSpaceText || "FREE SPACE") || eventText === "FREE_SPACE");
+  };
+
+  // Function to get event index from board coordinates for voting
+  const getEventIndexForCell = (rowIndex, colIndex) => {
+    const currentPlayer = getCurrentPlayer();
+    if (!currentPlayer) return -1;
+    
+    const playerData = typeof currentPlayer === 'string' 
+      ? JSON.parse(currentPlayer) 
+      : currentPlayer;
+    
+    // If player has a custom boardEvents mapping, use that to lookup original event index
+    if (playerData.boardEvents) {
+      const boardIndex = rowIndex * parseInt(game.boardSize) + colIndex;
+      const cellContent = playerData.boardEvents[boardIndex];
+      
+      // Free space doesn't have a corresponding event
+      if (cellContent === "FREE_SPACE") {
+        return -1; // Special case for free space
+      }
+      
+      // Find the index of this event in the original events array
+      return game.events.indexOf(cellContent);
+    }
+    
+    // Fallback to standard board layout
+    const boardSize = parseInt(game.boardSize);
+    const cellIndex = rowIndex * boardSize + colIndex;
+    
+    // Adjust for free space if necessary
+    if (game.addFreeSpace) {
+      const centerPos = Math.floor(boardSize * boardSize / 2);
+      if (cellIndex === centerPos) {
+        return -1; // Free space
+      }
+      // Adjust index for cells after the free space
+      return cellIndex < centerPos ? cellIndex : cellIndex - 1;
+    }
+    
+    return cellIndex;
+  };
+
+  // Function to check if a cell is verified (voted)
+  const isCellVerified = (rowIndex, colIndex) => {
+    const eventIndex = getEventIndexForCell(rowIndex, colIndex);
+    if (eventIndex === -1) return true; // Free space is always verified
+    return game.verifiedEvents && game.verifiedEvents.includes(eventIndex);
+  };
+
+  // Handle cell click for voting
+  const handleCellClick = (rowIndex, colIndex) => {
+    const eventIndex = getEventIndexForCell(rowIndex, colIndex);
+    if (eventIndex === -1) return; // Don't do anything for free space
+    handleShowModal(eventIndex);
+  };
+  
+  // Function to check if a user has voted for an event
+  const hasUserVotedForEvent = (userId, eventIndex) => {
+    if (!userId || eventIndex === -1 || !game || !game.players) return false;
+    
+    const currentPlayer = getCurrentPlayer();
+    if (!currentPlayer) return false;
+    
+    const playerData = typeof currentPlayer === 'string' 
+      ? JSON.parse(currentPlayer) 
+      : currentPlayer;
+    
+    return playerData.ticked && Array.isArray(playerData.ticked) && 
+           playerData.ticked.includes(eventIndex);
+  };
+
+  // Render the player's board
+  const renderPlayerBoard = () => {
+    const board = getPlayerBoard();
+    if (!board) return null;
+    
+    return (
+      <div className={cn('grid gap-4', `grid-cols-${game.boardSize}`)}>
+        {board.map((row, rowIndex) => (
+          row.map((cellContent, colIndex) => {
+            const isFree = isFreeSpace(cellContent);
+            const isVerified = isCellVerified(rowIndex, colIndex);
+            const eventIndex = getEventIndexForCell(rowIndex, colIndex);
+            
+            return (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+                className={cn(
+                  'aspect-square p-4 flex items-center justify-center text-center cursor-pointer rounded-lg relative',
+                  (isVerified || isFree)
+                    ? 'bg-green-300 hover:bg-green-400 transition-colors'
+                    : 'bg-background border-2 border-primary hover:bg-primary/5 transition-colors'
+                )}
+              >
+                <p className="text-sm">{cellContent}</p>
+                {eventIndex !== -1 && game.status === 'started' && hasUserVotedForEvent(userId, eventIndex) && (
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"
+                       title="You've voted for this event"></div>
+                )}
+              </div>
+            );
+          })
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -569,22 +743,7 @@ export default function GamePage() {
           {/* Personal Board */}
           <div>
             <h2 className="text-2xl font-bold mb-4">Your Bingo Board</h2>
-            <div className={cn('grid gap-4', gridCols)}>
-              {game.events.map((event, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleShowModal(index)}
-                  className={cn(
-                    'aspect-square p-4 flex items-center justify-center text-center cursor-pointer rounded-lg',
-                    game.verifiedEvents && game.verifiedEvents.includes(index)
-                      ? 'bg-green-300 hover:bg-green-400 transition-colors'
-                      : 'bg-background border-2 border-primary hover:bg-primary/5 transition-colors'
-                  )}
-                >
-                  <p className="text-sm">{event}</p>
-                </div>
-              ))}
-            </div>
+            {renderPlayerBoard()}
           </div>
 
           {/* Communal Board */}

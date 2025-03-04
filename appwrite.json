@@ -1,5 +1,5 @@
 {
-    "projectId": "67b4bca9001e13fd56e8",
+    "projectId": "67b4bb31000f514b36ad",
     "projectName": "OpenBingo",
     "settings": {
         "services": {
@@ -46,15 +46,15 @@
             "name": "joinGame",
             "enabled": true,
             "logging": true,
-            "runtime": "node-18.0",
+            "runtime": "node-16.0",
             "scopes": [],
             "events": [],
             "schedule": "",
             "timeout": 15,
             "entrypoint": "joinGameFunction.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
-            "path": "functions/joinGame"
+            "path": "functions/joinGame",
+            "specification": "s-0.5vcpu-512mb"
         },
         {
             "$id": "67b74156001710462423",
@@ -64,15 +64,15 @@
             "name": "Create Game",
             "enabled": true,
             "logging": true,
-            "runtime": "node-18.0",
+            "runtime": "node-16.0",
             "scopes": [],
             "events": [],
             "schedule": "",
             "timeout": 15,
             "entrypoint": "createGameFunction.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
-            "path": "functions/Create Game"
+            "path": "functions/Create Game",
+            "specification": "s-0.5vcpu-512mb"
         },
         {
             "$id": "67b741820010d7638006",
@@ -82,15 +82,15 @@
             "name": "Search for Game",
             "enabled": true,
             "logging": true,
-            "runtime": "node-18.0",
+            "runtime": "node-16.0",
             "scopes": [],
             "events": [],
             "schedule": "",
             "timeout": 15,
             "entrypoint": "searchGameFunction.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
-            "path": "functions/Search for Game"
+            "path": "functions/Search for Game",
+            "specification": "s-0.5vcpu-512mb"
         },
         {
             "$id": "voteEvent",
@@ -109,7 +109,6 @@
             "timeout": 15,
             "entrypoint": "voteEventFunction.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
             "path": "functions/voteEvent"
         },
         {
@@ -120,15 +119,15 @@
             "name": "startGame",
             "enabled": true,
             "logging": true,
-            "runtime": "node-18.0",
+            "runtime": "node-16.0",
             "scopes": [],
             "events": [],
             "schedule": "",
             "timeout": 15,
             "entrypoint": "startGameFunction.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
-            "path": "functions/startGame"
+            "path": "functions/startGame",
+            "specification": "s-0.5vcpu-512mb"
         },
         {
             "$id": "67bf56b900076f196379",
@@ -136,15 +135,33 @@
             "name": "Delete Games // WORKER",
             "enabled": true,
             "logging": true,
-            "runtime": "node-18.0",
+            "runtime": "node-16.0",
             "scopes": [],
             "events": [],
             "schedule": "0 0 * * *",
             "timeout": 15,
             "entrypoint": "deleteGames.js",
             "commands": "npm install",
-            "specification": "s-1vcpu-512mb",
-            "path": "functions/Delete Games // WORKER"
+            "path": "functions/Delete Games // WORKER",
+            "specification": "s-0.5vcpu-512mb"
+        },
+        {
+            "$id": "67c7350f002f70ef19b5",
+            "execute": [
+                "users"
+            ],
+            "name": "Vote Event",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-16.0",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "voteEventFunction.js",
+            "commands": "npm install",
+            "specification": "s-0.5vcpu-512mb",
+            "path": "functions/Vote Event"
         }
     ],
     "databases": [

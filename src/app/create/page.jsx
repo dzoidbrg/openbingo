@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function CreateGame() {
   const [statusMessage, setStatusMessage] = useState('');
@@ -23,6 +25,8 @@ export default function CreateGame() {
   const [username, setUsername] = useState('');
   const maxUsernameLength = 20;
   const [charCount, setCharCount] = useState(0);
+  const [allowMoreEvents, setAllowMoreEvents] = useState(false);
+  const [addFreeSpace, setAddFreeSpace] = useState(false);
 
   const handleUsernameChange = (e) => {
     const value = e.target.value;
@@ -60,20 +64,59 @@ export default function CreateGame() {
     initSession();
   }, []);
 
-  const maxEvents = boardSize * boardSize;
+  // Calculate max events based on board size, accounting for free space if enabled
+  const getBoardCapacity = () => {
+    const totalSpots = boardSize * boardSize;
+    return addFreeSpace ? totalSpots - 1 : totalSpots;
+  };
+
+  const maxEvents = allowMoreEvents ? 9999 : getBoardCapacity();
+
+  // Update events when free space setting changes
+  useEffect(() => {
+    // If allowMoreEvents is false, trim extra events when:
+    // 1. Free space is turned on (need one fewer event)
+    // 2. Board size changes
+    if (!allowMoreEvents) {
+      const capacity = getBoardCapacity();
+      if (events.length > capacity) {
+        setEvents(events.slice(0, capacity));
+      }
+    }
+  }, [addFreeSpace, boardSize, allowMoreEvents]);
 
   const handleAddEvent = (e) => {
     e.preventDefault();
-    if (events.length < maxEvents) {
+    if (allowMoreEvents || events.length < maxEvents) {
       setEvents([...events, '']);
     }
   };
 
   const handleBoardSizeChange = (newSize) => {
     setBoardSize(Number(newSize));
-    const newMaxEvents = Number(newSize) * Number(newSize);
-    if (events.length > newMaxEvents) {
-      setEvents(events.slice(0, newMaxEvents));
+    
+    // Only limit events if allowMoreEvents is false
+    if (!allowMoreEvents) {
+      const newBoardSize = Number(newSize);
+      const newCapacity = addFreeSpace 
+        ? (newBoardSize * newBoardSize) - 1 
+        : newBoardSize * newBoardSize;
+        
+      if (events.length > newCapacity) {
+        setEvents(events.slice(0, newCapacity));
+      }
+    }
+  };
+
+  const handleAllowMoreEventsChange = (checked) => {
+    setAllowMoreEvents(checked);
+    
+    // If turning off "allow more events", trim excess events
+    if (!checked) {
+      const capacity = getBoardCapacity();
+      if (events.length > capacity) {
+        setEvents(events.slice(0, capacity));
+      }
     }
   };
 
@@ -110,6 +153,20 @@ export default function CreateGame() {
       return;
     }
 
+    // Validate event count for board size, considering free space
+    const requiredEvents = getBoardCapacity();
+    
+    if (!allowMoreEvents && events.length < requiredEvents) {
+      setError(`Please add at least ${requiredEvents} events to fill the board.`);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Please add at least ${requiredEvents} events to fill the board.`,
+      });
+      setIsLoading(false);
+      return;
+    }
+
     if (events.some(event => !event.trim())) {
       setError('All events must have content.');
       toast({
@@ -136,7 +193,9 @@ export default function CreateGame() {
         boardSize: boardSize,
         events: events,
         votingThreshold: parseInt(document.getElementById('threshold').value, 10) || 50,
-        gameCode: formattedGameCode
+        gameCode: formattedGameCode,
+        randomizeBoards: allowMoreEvents,
+        addFreeSpace: addFreeSpace
       };
 
       const response = await functions.createExecution(
@@ -290,10 +349,79 @@ export default function CreateGame() {
                 <Input type="number" id="threshold" min="1" max="100" defaultValue="50" />
               </div>
 
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="allowMoreEvents" 
+                    checked={allowMoreEvents}
+                    onCheckedChange={handleAllowMoreEventsChange}
+                  />
+                  <div className="flex items-center">
+                    <label htmlFor="allowMoreEvents" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Allow more events
+                    </label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="w-[220px]">
+                            If checked, you can add more events than needed, and each player will get a randomized board from your event pool.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="addFreeSpace" 
+                    checked={addFreeSpace}
+                    onCheckedChange={setAddFreeSpace}
+                  />
+                  <div className="flex items-center">
+                    <label htmlFor="addFreeSpace" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Add a free space
+                    </label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="w-[220px]">
+                            Add a free space in the center of each player's board.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-lg font-medium text-foreground">Bingo Events ({events.length}/{maxEvents})</label>
-                  <Button onClick={handleAddEvent} disabled={events.length >= maxEvents} variant="secondary" size="sm">Add Event</Button>
+                  <label className="block text-lg font-medium text-foreground">
+                    Bingo Events 
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      ({events.length}/{allowMoreEvents ? `${getBoardCapacity()}+` : maxEvents})
+                      {addFreeSpace && (
+                        <span className="ml-1 text-xs text-lime-600">
+                          (includes one free space in center)
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                  <Button 
+                    onClick={handleAddEvent} 
+                    disabled={!allowMoreEvents && events.length >= maxEvents} 
+                    variant="secondary" 
+                    size="sm"
+                  >
+                    Add Event
+                  </Button>
                 </div>
                 <div className="space-y-4">
                   {events.map((event, index) => (
@@ -305,6 +433,11 @@ export default function CreateGame() {
                     />
                   ))}
                 </div>
+                {addFreeSpace && events.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    A free space will automatically be placed in the center of each player's board.
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}>
