@@ -17,9 +17,9 @@ export default function MyGames() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        if (session && session.$id) {
-          setUserId(session.$id);
-          fetchUserGames(session.$id);
+        if (session && session.userId) {
+          setUserId(session.userId);
+          fetchUserGames(session.userId);
         }
       } catch (error) {
         console.error('Error initializing session:', error);

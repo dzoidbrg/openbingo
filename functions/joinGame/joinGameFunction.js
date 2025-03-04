@@ -74,6 +74,18 @@ export default async ({ req, res, log, error }) => {
       return res.json({ success: true, message: 'Player already joined.' });
     }
 
+    if (parsedPlayers.some(player => player && player.username.trim().toLowerCase() === username.trim().toLowerCase())) {
+      return res.json({ success: false, error: 'Username already taken. Please choose another.' });
+    }
+
+    // check for the game status being 'waiting', if its not then return an error
+    if (game.status !== 'waiting') {
+      return res.json({
+        success: false,
+        error: 'Game is not in waiting state.'
+      });
+    }
+
     // Create new player object and stringify it for storage
     const newPlayerObj = {
       userId,

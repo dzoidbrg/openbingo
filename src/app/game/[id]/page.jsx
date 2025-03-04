@@ -56,7 +56,7 @@ export default function GamePage() {
     const initSession = async () => {
       try {
         const session = await getOrCreateAnonymousSession();
-        setUserId(session.$id);
+        setUserId(session.userId);
       } catch (err) {
         console.error('Error initializing session:', err);
         setError('Failed to initialize session');
@@ -364,10 +364,10 @@ export default function GamePage() {
     return result;
   };
 
-  // Function to check if a cell is the free space
+
   const isFreeSpace = (eventText) => {
     return game?.addFreeSpace && 
-      (eventText === (game.freeSpaceText || "FREE SPACE") || eventText === "FREE_SPACE");
+      (eventText === (game.freeSpaceText || "FREE SPACE") || eventText === "Free Space");
   };
 
   // Function to get event index from board coordinates for voting
@@ -385,7 +385,7 @@ export default function GamePage() {
       const cellContent = playerData.boardEvents[boardIndex];
       
       // Free space doesn't have a corresponding event
-      if (cellContent === "FREE_SPACE") {
+      if (cellContent === "Free Space") {
         return -1; // Special case for free space
       }
       

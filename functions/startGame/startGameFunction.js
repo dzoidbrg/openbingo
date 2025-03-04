@@ -45,7 +45,7 @@ function generateRandomBoard(events, boardSize, addFreeSpace, existingBoards = [
       const completeBoard = [];
       for (let i = 0; i < totalCells; i++) {
         if (i === centerIndex) {
-          completeBoard.push("FREE_SPACE"); // Special marker for free space
+          completeBoard.push("Free Space"); // Special marker for free space
         } else {
           // Adjust the index based on whether we've passed the center
           const eventIndex = i < centerIndex ? i : i - 1;
