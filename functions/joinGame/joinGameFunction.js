@@ -82,7 +82,7 @@ export default async ({ req, res, log, error }) => {
     if (game.status !== 'waiting') {
       return res.json({
         success: false,
-        error: 'Game is not in waiting state.'
+        error: 'Game has already started or ended!'
       });
     }
 
