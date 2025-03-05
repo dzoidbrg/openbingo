@@ -197,7 +197,7 @@ export default function GamePage() {
       });
       
       // Use the voteEvent cloud function
-      const result = await functions.createExecution('voteEvent', payload);
+      const result = await functions.createExecution(process.env.APPWRITE_FUNCTION_VOTE_EVENT_ID, payload);
       
       // Parse response
       const response = JSON.parse(result.response);
@@ -414,7 +414,21 @@ export default function GamePage() {
   const isCellVerified = (rowIndex, colIndex) => {
     const eventIndex = getEventIndexForCell(rowIndex, colIndex);
     if (eventIndex === -1) return true; // Free space is always verified
-    return game.verifiedEvents && game.verifiedEvents.includes(eventIndex);
+    
+    // Check if verifiedEvents array exists and convert its string values to numbers for comparison
+    return game.verifiedEvents && game.verifiedEvents.some(index => {
+      // Handle both string and number types for backward compatibility
+      return index.toString() === eventIndex.toString();
+    });
+  };
+  
+  // Add this function to help with checking verified events
+  const isEventVerified = (index) => {
+    // Check if verifiedEvents array exists and convert its string values to numbers for comparison
+    return game.verifiedEvents && game.verifiedEvents.some(verifiedIndex => {
+      // Handle both string and number types for backward compatibility
+      return verifiedIndex.toString() === index.toString();
+    });
   };
 
   // Handle cell click for voting
@@ -754,7 +768,7 @@ export default function GamePage() {
                 const voteCount = (game.votes && game.votes[index]) || 0;
                 const totalPlayers = (game.players || []).length;
                 const requiredVotes = Math.ceil(totalPlayers * game.votingThreshold / 100);
-                const verified = game.verifiedEvents && game.verifiedEvents.includes(index);
+                const verified = isEventVerified(index);
                 const isVoting = votingEvents[index];
                 
                 // Calculate progress percentage

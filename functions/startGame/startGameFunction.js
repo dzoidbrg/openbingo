@@ -18,17 +18,22 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-// Generate a random board for a player
+// Generate a random board for a player, ensuring no duplicate events
 function generateRandomBoard(events, boardSize, addFreeSpace, existingBoards = []) {
   const totalCells = boardSize * boardSize;
   const centerIndex = Math.floor(totalCells / 2);
   let eventsNeeded = addFreeSpace ? totalCells - 1 : totalCells;
   
+  // If we don't have enough events, we can't make a unique board
+  if (events.length < eventsNeeded) {
+    throw new Error(`Not enough events to create a unique board. Need ${eventsNeeded}, have ${events.length}.`);
+  }
+  
   // Create a board with selected events (flatten representation)
   let boardEvents;
   let isUnique = false;
   let attempts = 0;
-  const maxAttempts = 50; // Prevent infinite loops if too many constraints
+  const maxAttempts = 100; // Prevent infinite loops
   
   while (!isUnique && attempts < maxAttempts) {
     attempts++;
@@ -36,23 +41,34 @@ function generateRandomBoard(events, boardSize, addFreeSpace, existingBoards = [
     // Shuffle events to get a random selection
     const shuffledEvents = shuffleArray(events);
     
-    // Take required number of events
-    boardEvents = shuffledEvents.slice(0, eventsNeeded);
+    // Take required number of events, ensuring no duplicates
+    const selectedEvents = [];
+    for (let i = 0; i < shuffledEvents.length && selectedEvents.length < eventsNeeded; i++) {
+      if (!selectedEvents.includes(shuffledEvents[i])) {
+        selectedEvents.push(shuffledEvents[i]);
+      }
+    }
+    
+    // If we still don't have enough unique events, try again
+    if (selectedEvents.length < eventsNeeded) {
+      continue;
+    }
     
     // Insert free space in the center if needed
+    boardEvents = [];
     if (addFreeSpace) {
       // Create a complete board with free space
-      const completeBoard = [];
       for (let i = 0; i < totalCells; i++) {
         if (i === centerIndex) {
-          completeBoard.push("Free Space"); // Special marker for free space
+          boardEvents.push("FREE_SPACE"); // Special marker for free space
         } else {
           // Adjust the index based on whether we've passed the center
           const eventIndex = i < centerIndex ? i : i - 1;
-          completeBoard.push(boardEvents[eventIndex]);
+          boardEvents.push(selectedEvents[eventIndex]);
         }
       }
-      boardEvents = completeBoard;
+    } else {
+      boardEvents = [...selectedEvents];
     }
     
     // Convert to string representation for comparison
@@ -60,6 +76,10 @@ function generateRandomBoard(events, boardSize, addFreeSpace, existingBoards = [
     
     // Check against existing boards to ensure uniqueness
     isUnique = !existingBoards.some(board => JSON.stringify(board) === boardStr);
+  }
+  
+  if (!isUnique) {
+    console.warn(`Could not generate a unique board after ${maxAttempts} attempts. Some boards may be similar.`);
   }
   
   // Convert flat board to 2D layout
@@ -76,11 +96,11 @@ function generateRandomBoard(events, boardSize, addFreeSpace, existingBoards = [
   return { board, boardEvents };
 }
 
-export default async ({ req, res }) => {
+export default async ({ req, res, context }) => {
   try {
     // Extract payload and user ID from headers
     const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
-    console.log('Received payload:', payload);
+    context.log('Received payload:', payload);
 
     const userId = req.headers['x-appwrite-user-id'];
     const { gameId } = payload;
@@ -149,6 +169,8 @@ export default async ({ req, res }) => {
             ? JSON.parse(players[i]) 
             : players[i];
           
+          context.log(`Generating board for player ${playerData.username}`);
+          
           // Generate a unique random board for this player
           const { board, boardEvents } = generateRandomBoard(
             game.events, 
@@ -171,15 +193,19 @@ export default async ({ req, res }) => {
           // Add updated player back to array
           updatedPlayers.push(JSON.stringify(updatedPlayer));
         } catch (e) {
-          console.error(`Error processing player ${i}:`, e);
+          context.error(`Error processing player ${i}:`, e);
           updatedPlayers.push(players[i]); // Keep original if there's an error
         }
       }
       
+      // Initialize verifiedEvents as an empty array (with correct string type)
+      const verifiedEvents = [];
+      
       // Update the game with updated players and free space text
       const updateData = { 
         status: 'started',
-        players: updatedPlayers
+        players: updatedPlayers,
+        verifiedEvents: verifiedEvents
       };
       
       if (addFreeSpace) {
@@ -204,7 +230,10 @@ export default async ({ req, res }) => {
         process.env.BINGO_DATABASE_ID,
         process.env.GAMES_COLLECTION_ID,
         gameId,
-        { status: 'started' }
+        { 
+          status: 'started',
+          verifiedEvents: [] // Initialize as empty array
+        }
       );
 
       return res.json({
@@ -214,7 +243,7 @@ export default async ({ req, res }) => {
       });
     }
   } catch (error) {
-    console.error('Error in startGameFunction:', error);
+    context.error('Error in startGameFunction:', error);
     return res.json({
       success: false,
       error: error.message || 'An unknown error occurred'

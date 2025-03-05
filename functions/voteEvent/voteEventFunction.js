@@ -1,6 +1,6 @@
 import { Client, Users, Databases } from 'node-appwrite';
 
-export default async ({ req, res }) => {
+export default async ({ req, res, context }) => {
   const client = new Client();
   client
     .setEndpoint(process.env.APPWRITE_ENDPOINT)
@@ -9,11 +9,12 @@ export default async ({ req, res }) => {
 
   const database = new Databases(client);
   try {
-    console.log("Received request:", req);
+    // Use context.log instead of console.log
+    context.log("Received request:", req);
 
     // Extract payload safely from the nested request structure
     const payload = req.bodyJson || JSON.parse(req.body || '{}');
-    console.log("Parsed payload:", payload);
+    context.log("Parsed payload:", payload);
 
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
@@ -54,7 +55,7 @@ export default async ({ req, res }) => {
     }
 
     // Process players array
-    console.log("Game players:", game.players);
+    context.log("Game players:", game.players);
     
     // Fix: Check if the user is in the game by session ID from the headers
     // or use the userId from the payload as a fallback
@@ -62,8 +63,8 @@ export default async ({ req, res }) => {
       ? JSON.parse(Buffer.from(req.headers['x-appwrite-user-jwt'].split('.')[1], 'base64').toString()).sessionId
       : null;
     
-    console.log("User ID from payload:", userId);
-    console.log("Session ID from JWT:", sessionId);
+    context.log("User ID from payload:", userId);
+    context.log("Session ID from JWT:", sessionId);
     
     // Process and update the players array
     let players = [];
@@ -75,7 +76,7 @@ export default async ({ req, res }) => {
       const playerJson = game.players[i];
       try {
         const player = typeof playerJson === 'string' ? JSON.parse(playerJson) : playerJson;
-        console.log("Checking player:", player);
+        context.log("Checking player:", player);
         
         // Initialize ticked array if it doesn't exist
         if (!player.ticked) {
@@ -105,7 +106,7 @@ export default async ({ req, res }) => {
         // Add the processed player to the new array
         players.push(typeof playerJson === 'string' ? JSON.stringify(player) : player);
       } catch (e) {
-        console.error("Error processing player:", e);
+        context.error("Error processing player:", e);
         players.push(playerJson); // Keep original player data if processing fails
       }
     }
@@ -132,7 +133,7 @@ export default async ({ req, res }) => {
       });
     }
 
-    console.log("User validation passed, processing vote");
+    context.log("User validation passed, processing vote");
 
     // Calculate votes for this event based on player ticks
     const voteCounts = new Array(game.events.length).fill(0);
@@ -149,7 +150,7 @@ export default async ({ req, res }) => {
           }
         }
       } catch (e) {
-        console.error("Error counting votes:", e);
+        context.error("Error counting votes:", e);
       }
     }
     
@@ -160,13 +161,14 @@ export default async ({ req, res }) => {
     // Get existing verified events or initialize
     let verifiedEvents = game.verifiedEvents || [];
     
+    // Fix: Convert event indices to strings for Appwrite compatibility
     // If vote count meets the threshold, mark as verified
-    if (voteCounts[eventIndex] >= requiredVotes && !verifiedEvents.includes(eventIndex)) {
-      verifiedEvents.push(eventIndex);
+    if (voteCounts[eventIndex] >= requiredVotes && !verifiedEvents.includes(String(eventIndex))) {
+      verifiedEvents.push(String(eventIndex)); // Store as string
     }
 
-    console.log(`Vote count: ${voteCounts[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(eventIndex)}`);
-    console.log(`Updated player's ticked events:`, 
+    context.log(`Vote count: ${voteCounts[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(String(eventIndex))}`);
+    context.log(`Updated player's ticked events:`, 
       typeof players[currentPlayerIndex] === 'string' 
         ? JSON.parse(players[currentPlayerIndex]).ticked 
         : players[currentPlayerIndex].ticked
@@ -185,16 +187,16 @@ export default async ({ req, res }) => {
         }
       );
 
-      console.log("Updated game document successfully");
+      context.log("Updated game document successfully");
       return res.json({ 
         success: true, 
         game: updatedGame,
         voteCount: voteCounts[eventIndex],
         requiredVotes,
-        verified: verifiedEvents.includes(eventIndex)
+        verified: verifiedEvents.includes(String(eventIndex))
       });
     } catch (updateError) {
-      console.error("Error updating document:", updateError);
+      context.error("Error updating document:", updateError);
       if (updateError.code === 409) {
         return res.json({
           success: false,
@@ -205,7 +207,7 @@ export default async ({ req, res }) => {
     }
 
   } catch (error) {
-    console.error("Error in voteEventFunction:", error);
+    context.error("Error in voteEventFunction:", error);
     return res.json({
       success: false,
       error: error.message || "Unknown error occurred"
