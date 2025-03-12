@@ -1,6 +1,6 @@
 import { Client, Users, Databases } from 'node-appwrite';
 
-export default async ({ req, res, context }) => {
+export default async ({ req, res, context, error, log }) => {
   const client = new Client();
   client
     .setEndpoint(process.env.APPWRITE_ENDPOINT)
