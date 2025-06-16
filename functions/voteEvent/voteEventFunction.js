@@ -9,12 +9,12 @@ export default async ({ req, res, context, error, log }) => {
 
   const database = new Databases(client);
   try {
-    // Use context.log instead of console.log
-    context.log("Received request:", req);
+    // Use console.log instead of console.log
+    console.log("Received request:", req);
 
     // Extract payload safely from the nested request structure
     const payload = req.bodyJson || JSON.parse(req.body || '{}');
-    context.log("Parsed payload:", payload);
+    console.log("Parsed payload:", payload);
 
     const { gameId, eventIndex, userId } = payload;
     if (!gameId || eventIndex === undefined || !userId) {
@@ -55,7 +55,7 @@ export default async ({ req, res, context, error, log }) => {
     }
 
     // Process players array
-    context.log("Game players:", game.players);
+    console.log("Game players:", game.players);
     
     // Fix: Check if the user is in the game by session ID from the headers
     // or use the userId from the payload as a fallback
@@ -63,8 +63,8 @@ export default async ({ req, res, context, error, log }) => {
       ? JSON.parse(Buffer.from(req.headers['x-appwrite-user-jwt'].split('.')[1], 'base64').toString()).sessionId
       : null;
     
-    context.log("User ID from payload:", userId);
-    context.log("Session ID from JWT:", sessionId);
+    console.log("User ID from payload:", userId);
+    console.log("Session ID from JWT:", sessionId);
     
     // Process and update the players array
     let players = [];
@@ -76,7 +76,7 @@ export default async ({ req, res, context, error, log }) => {
       const playerJson = game.players[i];
       try {
         const player = typeof playerJson === 'string' ? JSON.parse(playerJson) : playerJson;
-        context.log("Checking player:", player);
+        console.log("Checking player:", player);
         
         // Initialize ticked array if it doesn't exist
         if (!player.ticked) {
@@ -106,7 +106,7 @@ export default async ({ req, res, context, error, log }) => {
         // Add the processed player to the new array
         players.push(typeof playerJson === 'string' ? JSON.stringify(player) : player);
       } catch (e) {
-        context.error("Error processing player:", e);
+        console.log("Error processing player:", e);
         players.push(playerJson); // Keep original player data if processing fails
       }
     }
@@ -133,7 +133,7 @@ export default async ({ req, res, context, error, log }) => {
       });
     }
 
-    context.log("User validation passed, processing vote");
+    console.log("User validation passed, processing vote");
 
     // Calculate votes for this event based on player ticks
     const voteCounts = new Array(game.events.length).fill(0);
@@ -150,7 +150,7 @@ export default async ({ req, res, context, error, log }) => {
           }
         }
       } catch (e) {
-        context.error("Error counting votes:", e);
+        console.log("Error counting votes:", e);
       }
     }
     
@@ -167,8 +167,8 @@ export default async ({ req, res, context, error, log }) => {
       verifiedEvents.push(String(eventIndex)); // Store as string
     }
 
-    context.log(`Vote count: ${voteCounts[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(String(eventIndex))}`);
-    context.log(`Updated player's ticked events:`, 
+    console.log(`Vote count: ${voteCounts[eventIndex]}/${requiredVotes}, verified: ${verifiedEvents.includes(String(eventIndex))}`);
+    console.log(`Updated player's ticked events:`, 
       typeof players[currentPlayerIndex] === 'string' 
         ? JSON.parse(players[currentPlayerIndex]).ticked 
         : players[currentPlayerIndex].ticked
@@ -187,7 +187,7 @@ export default async ({ req, res, context, error, log }) => {
         }
       );
 
-      context.log("Updated game document successfully");
+      console.log("Updated game document successfully");
       return res.json({ 
         success: true, 
         game: updatedGame,
@@ -196,7 +196,7 @@ export default async ({ req, res, context, error, log }) => {
         verified: verifiedEvents.includes(String(eventIndex))
       });
     } catch (updateError) {
-      context.error("Error updating document:", updateError);
+      console.log("Error updating document:", updateError);
       if (updateError.code === 409) {
         return res.json({
           success: false,
@@ -207,7 +207,7 @@ export default async ({ req, res, context, error, log }) => {
     }
 
   } catch (error) {
-    context.error("Error in voteEventFunction:", error);
+    console.log("Error in voteEventFunction:", error);
     return res.json({
       success: false,
       error: error.message || "Unknown error occurred"
