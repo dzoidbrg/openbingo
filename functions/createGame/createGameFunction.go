@@ -29,6 +29,24 @@ type Game struct {
 }
 
 func Main(Context openruntimes.Context) openruntimes.Response {
+	// Always ensure we return a response, even if something goes wrong
+	defer func() {
+		if r := recover(); r != nil {
+			Context.Log("Panic occurred: " + r.(string))
+		}
+	}()
+
+	Context.Log("Function started")
+
+	// Validate environment variables first
+	if os.Getenv("BINGO_DATABASE_ID") == "" || os.Getenv("GAMES_COLLECTION_ID") == "" {
+		Context.Log("Missing environment variables")
+		return Context.Res.Json(map[string]interface{}{
+			"success": false,
+			"error":   "Missing required environment variables",
+		})
+	}
+
 	client := appwrite.NewClient(
 		appwrite.WithEndpoint(os.Getenv("APPWRITE_FUNCTION_API_ENDPOINT")),
 		appwrite.WithProject(os.Getenv("APPWRITE_FUNCTION_PROJECT_ID")),
@@ -38,25 +56,87 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 
 	// Retrieve the request body by calling the function.
 	bodyVal := Context.Req.Body()
-	body, ok := bodyVal.(string)
-	if !ok {
+	if bodyVal == nil {
+		Context.Log("Request body is nil")
 		return Context.Res.Json(map[string]interface{}{
 			"success": false,
-			"error":   "Invalid request body",
+			"error":   "Request body is empty",
 		})
 	}
+
+	body, ok := bodyVal.(string)
+	if !ok {
+		Context.Log("Request body is not a string")
+		return Context.Res.Json(map[string]interface{}{
+			"success": false,
+			"error":   "Invalid request body type",
+		})
+	}
+
+	Context.Log("Request body: " + body)
 
 	var payload map[string]interface{}
 	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		Context.Log("JSON unmarshal error: " + err.Error())
 		return Context.Res.Json(map[string]interface{}{
 			"success": false,
-			"error":   "Invalid JSON payload",
+			"error":   "Invalid JSON payload: " + err.Error(),
 		})
 	}
 
-	creatorId, _ := payload["creatorId"].(string)
-	boardSize, _ := strconv.Atoi(payload["boardSize"].(string))
-	votingThreshold, _ := strconv.Atoi(payload["votingThreshold"].(string))
+	Context.Log("Payload parsed successfully")
+
+	// Validate required fields with better error handling
+	creatorId, ok := payload["creatorId"].(string)
+	if !ok || creatorId == "" {
+		return Context.Res.Json(map[string]interface{}{
+			"success": false,
+			"error":   "Missing or invalid creatorId",
+		})
+	}
+
+	// Handle boardSize conversion more safely
+	var boardSize int
+	switch v := payload["boardSize"].(type) {
+	case float64:
+		boardSize = int(v)
+	case string:
+		var err error
+		boardSize, err = strconv.Atoi(v)
+		if err != nil {
+			return Context.Res.Json(map[string]interface{}{
+				"success": false,
+				"error":   "Invalid boardSize format",
+			})
+		}
+	default:
+		return Context.Res.Json(map[string]interface{}{
+			"success": false,
+			"error":   "Missing or invalid boardSize",
+		})
+	}
+
+	// Handle votingThreshold conversion more safely
+	var votingThreshold int
+	switch v := payload["votingThreshold"].(type) {
+	case float64:
+		votingThreshold = int(v)
+	case string:
+		var err error
+		votingThreshold, err = strconv.Atoi(v)
+		if err != nil {
+			return Context.Res.Json(map[string]interface{}{
+				"success": false,
+				"error":   "Invalid votingThreshold format",
+			})
+		}
+	default:
+		return Context.Res.Json(map[string]interface{}{
+			"success": false,
+			"error":   "Missing or invalid votingThreshold",
+		})
+	}
+
 	eventsInterface, ok := payload["events"].([]interface{})
 	if !ok {
 		return Context.Res.Json(map[string]interface{}{
@@ -71,13 +151,15 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		} else {
 			return Context.Res.Json(map[string]interface{}{
 				"success": false,
-				"error":   "Invalid event format",
+				"error":   "Invalid event format at index " + strconv.Itoa(i),
 			})
 		}
 	}
 
-	randomizeBoards := payload["randomizeBoards"].(bool)
-	addFreeSpace := payload["addFreeSpace"].(bool)
+	// Handle boolean values with defaults
+	randomizeBoards, _ := payload["randomizeBoards"].(bool)
+	addFreeSpace, _ := payload["addFreeSpace"].(bool)
+
 	totalBoardSpots := boardSize * boardSize
 	requiredEvents := totalBoardSpots
 	if addFreeSpace {
@@ -87,7 +169,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	if !randomizeBoards && len(events) < requiredEvents {
 		return Context.Res.Json(map[string]interface{}{
 			"success": false,
-			"error":   "Not enough events provided",
+			"error":   "Not enough events provided. Need " + strconv.Itoa(requiredEvents) + ", got " + strconv.Itoa(len(events)),
 		})
 	}
 
@@ -119,6 +201,8 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}
 	}
 
+	Context.Log("Attempting to create document")
+
 	document, err := databases.CreateDocument(
 		os.Getenv("BINGO_DATABASE_ID"),
 		os.Getenv("GAMES_COLLECTION_ID"),
@@ -129,9 +213,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		Context.Log("Error creating game document: " + err.Error())
 		return Context.Res.Json(map[string]interface{}{
 			"success": false,
-			"error":   "Failed to create game document",
+			"error":   "Failed to create game document: " + err.Error(),
 		})
 	}
+
+	Context.Log("Document created successfully")
 
 	return Context.Res.Json(map[string]interface{}{
 		"success": true,
