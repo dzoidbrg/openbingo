@@ -100,7 +100,7 @@ export default async ({ req, res, context }) => {
   try {
     // Extract payload and user ID from headers
     const payload = req?.bodyJson || JSON.parse(req?.body || '{}');
-    context.log('Received payload:', payload);
+    console.log('Received payload:', payload);
 
     const userId = req.headers['x-appwrite-user-id'];
     const { gameId } = payload;
@@ -169,7 +169,7 @@ export default async ({ req, res, context }) => {
             ? JSON.parse(players[i]) 
             : players[i];
           
-          context.log(`Generating board for player ${playerData.username}`);
+          console.log(`Generating board for player ${playerData.username}`);
           
           // Generate a unique random board for this player
           const { board, boardEvents } = generateRandomBoard(
