@@ -193,7 +193,7 @@ export default async ({ req, res, context }) => {
           // Add updated player back to array
           updatedPlayers.push(JSON.stringify(updatedPlayer));
         } catch (e) {
-          context.error(`Error processing player ${i}:`, e);
+          console.log(`Error processing player ${i}:`, e);
           updatedPlayers.push(players[i]); // Keep original if there's an error
         }
       }
@@ -243,7 +243,7 @@ export default async ({ req, res, context }) => {
       });
     }
   } catch (error) {
-    context.error('Error in startGameFunction:', error);
+    console.log('Error in startGameFunction:', error);
     return res.json({
       success: false,
       error: error.message || 'An unknown error occurred'
