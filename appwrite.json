@@ -17,13 +17,13 @@
         },
         "auth": {
             "methods": {
-                "jwt": false,
-                "phone": false,
-                "invites": false,
+                "jwt": true,
+                "phone": true,
+                "invites": true,
                 "anonymous": true,
-                "email-otp": false,
-                "magic-url": false,
-                "email-password": false
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
             },
             "security": {
                 "duration": 31536000,
@@ -162,6 +162,27 @@
             "commands": "npm install",
             "specification": "s-0.5vcpu-512mb",
             "path": "functions/Vote Event"
+        },
+        {
+            "$id": "67d1f5c400357fc979dd",
+            "execute": [
+                "users"
+            ],
+            "name": "Create Game",
+            "enabled": true,
+            "logging": true,
+            "runtime": "go-1.23",
+            "scopes": [
+                "documents.read",
+                "documents.write"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "createGameFunction.go",
+            "commands": "",
+            "specification": "s-0.5vcpu-512mb",
+            "path": "functions/Create Game"
         }
     ],
     "databases": [
@@ -305,6 +326,28 @@
                     "key": "host",
                     "type": "string",
                     "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null
+                },
+                {
+                    "key": "addFreeSpace",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "randomizeBoards",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "freeSpaceText",
+                    "type": "string",
+                    "required": false,
                     "array": false,
                     "size": 100,
                     "default": null
