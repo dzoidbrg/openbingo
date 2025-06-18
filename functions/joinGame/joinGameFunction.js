@@ -1,4 +1,3 @@
-import { J } from 'framer-motion/dist/types.d-6pKw1mTI';
 import { Client, Databases, Permission, Role } from 'node-appwrite';
 import { createHash } from 'node:crypto';
 
@@ -93,10 +92,23 @@ export default async ({ req, res, log, error }) => {
     const shuffledGame = [...game].sort(() => Math.random() - 0.5);
     const totalCells = gameDimensions * gameDimensions;
     const uniqueElements = shuffledGame.slice(0, totalCells);
-
+    
+    let newPlayerBoard;
+    // check for free space
+    if (game.addFreeSpace) {
+      const newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) => {
+        const rowElements = uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions);
+        if (row === Math.floor(gameDimensions / 2)) {
+          const midIndex = Math.floor(gameDimensions / 2);
+          rowElements[midIndex] = game.freeSpaceText;
+        }
+        return rowElements;
+      });
+    } else {
     const newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) =>
       uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions)
     );
+    }
 
     // Create new player object and stringify it for storage
     const newPlayerObj = {
