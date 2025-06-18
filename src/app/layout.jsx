@@ -20,12 +20,12 @@ export default function RootLayout({ children }) {
           data-website-id={process.env.UMAMI_WEBSITE_ID}
         ></script>
       </head>
-      <body className={inter.className}>
-        <ThemeProvider
+      <body className={inter.className}>        <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          storageKey="openbingo-theme"
         >
           <div className="min-h-screen bg-background font-sans antialiased relative">
             <div className="fixed top-0 left-0 right-0 z-50 bg-background">

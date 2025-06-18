@@ -49,8 +49,8 @@ export default function WinnerPage({ params }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <h1 className="text-5xl font-bold text-primary mb-6">We Have a Winner!</h1>
-      <p className="text-2xl mb-4">Congratulations, <span className="font-semibold">{game.winner}</span>!</p>
-      <p className="mb-8">Thanks for playing OpenBingo.</p>
+      <p className="text-2xl mb-4">Congratulations, <span className="font-semibold">{game.winner ? game.winner : 'Unknown Player'}</span>!</p>
+      <p className="mb-8">We hope you enjoyed this game!.</p>
       <Link
         href="/"
         className={cn(
@@ -60,6 +60,7 @@ export default function WinnerPage({ params }) {
       >
         Return to Home
       </Link>
+      
     </div>
   );
 }

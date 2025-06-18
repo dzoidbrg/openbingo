@@ -10,6 +10,7 @@ import { Toaster } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BingoBoard } from '@/components/ui/bingo-board';
 
 export default function CreateGame() {
   const [statusMessage, setStatusMessage] = useState('');
@@ -27,6 +28,7 @@ export default function CreateGame() {
   const [charCount, setCharCount] = useState(0);
   const [allowMoreEvents, setAllowMoreEvents] = useState(false);
   const [addFreeSpace, setAddFreeSpace] = useState(false);
+  const [sampleBoard, setSampleBoard] = useState(null);
 
   const handleUsernameChange = (e) => {
     const value = e.target.value;
@@ -307,167 +309,259 @@ export default function CreateGame() {
     }
   };
 
+  // Fisher-Yates shuffle
+  function shuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // Generate a sample bingo board as if the player were in a game
+  const handleGenerateSampleBoard = () => {
+    const size = boardSize;
+    const totalSpots = size * size;
+    const eventCount = addFreeSpace ? totalSpots - 1 : totalSpots;
+    let boardEvents = events.length >= eventCount
+      ? shuffle(events).slice(0, eventCount)
+      : shuffle(Array.from({ length: eventCount }, (_, i) => `Sample Event ${i + 1}`));
+    // Insert free space if needed
+    if (addFreeSpace) {
+      const center = Math.floor(totalSpots / 2);
+      boardEvents = [
+        ...boardEvents.slice(0, center),
+        'FREE SPACE',
+        ...boardEvents.slice(center)
+      ];
+    }
+    setSampleBoard(boardEvents);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-8">
-      <Card className="w-full max-w-2xl shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex gap-3 p-4 mb-4 text-sm border rounded-lg bg-yellow-500/15 text-yellow-600 border-yellow-500/20">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <div className="space-y-1">
-              <p>All games will be automatically deleted after 24-48 hours of inactivity.</p>
-              <p className="text-xs text-muted-foreground">This can vary based on when the game is created.</p>
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center">Create Game</h1>
-
-          {step === 'form' ? (
-            <form className="space-y-6" onSubmit={handleCreateGame}>
-              <div className="space-y-2">
-                <label className="block text-lg font-medium text-foreground">Board Size</label>
-                <Select value={boardSize.toString()} onValueChange={handleBoardSizeChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select board size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3 x 3</SelectItem>
-                    <SelectItem value="4">4 x 4</SelectItem>
-                    <SelectItem value="5">5 x 5</SelectItem>
-                  </SelectContent>
-                </Select>
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left: Form Section */}
+        <Card className="shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex gap-3 p-4 mb-4 text-sm border rounded-lg bg-yellow-500/15 text-yellow-600 border-yellow-500/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div className="space-y-1">
+                <p>All games will be automatically deleted after 24-48 hours of inactivity.</p>
+                <p className="text-xs text-muted-foreground">This can vary based on when the game is created.</p>
               </div>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tighter mb-6 text-primary text-center">Create Game</h1>
+            {step === 'form' ? (
+              <form className="space-y-6" onSubmit={handleCreateGame}>
+                <div className="space-y-2">
+                  <label className="block text-lg font-medium text-foreground">Board Size</label>
+                  <Select value={boardSize.toString()} onValueChange={handleBoardSizeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select board size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 x 3</SelectItem>
+                      <SelectItem value="4">4 x 4</SelectItem>
+                      <SelectItem value="5">5 x 5</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <label htmlFor="threshold" className="block text-lg font-medium text-foreground">Voting Threshold (%)</label>
-                  <div className="relative group">
-                    <div className="cursor-help text-muted-foreground">ⓘ</div>
-                    <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
-                      The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="threshold" className="block text-lg font-medium text-foreground">Voting Threshold (%)</label>
+                    <div className="relative group">
+                      <div className="cursor-help text-muted-foreground">ⓘ</div>
+                      <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-2 bg-popover text-popover-foreground text-sm rounded-md shadow-lg z-50">
+                        The percentage of players that need to vote for an event before it's marked as completed on the bingo board.
+                      </div>
+                    </div>
+                  </div>
+                  <Input type="number" id="threshold" min="1" max="100" defaultValue="50" />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="allowMoreEvents" 
+                      checked={allowMoreEvents}
+                      onCheckedChange={handleAllowMoreEventsChange}
+                    />
+                    <div className="flex items-center">
+                      <label htmlFor="allowMoreEvents" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Allow more events
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="w-[220px]">
+                              If checked, you can add more events than needed, and each player will get a randomized board from your event pool.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="addFreeSpace" 
+                      checked={addFreeSpace}
+                      onCheckedChange={setAddFreeSpace}
+                    />
+                    <div className="flex items-center">
+                      <label htmlFor="addFreeSpace" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Add a free space
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="w-[220px]">
+                              Add a free space in the center of each player's board.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 </div>
-                <Input type="number" id="threshold" min="1" max="100" defaultValue="50" />
-              </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="allowMoreEvents" 
-                    checked={allowMoreEvents}
-                    onCheckedChange={handleAllowMoreEventsChange}
-                  />
-                  <div className="flex items-center">
-                    <label htmlFor="allowMoreEvents" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Allow more events
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-lg font-medium text-foreground">
+                      Bingo Events 
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        ({events.length}/{allowMoreEvents ? `${getBoardCapacity()}+` : maxEvents})
+                        {addFreeSpace && (
+                          <span className="ml-1 text-xs text-lime-600">
+                            (includes one free space in center)
+                          </span>
+                        )}
+                      </span>
                     </label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="w-[220px]">
-                            If checked, you can add more events than needed, and each player will get a randomized board from your event pool.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Button 
+                      onClick={handleAddEvent} 
+                      disabled={!allowMoreEvents && events.length >= maxEvents} 
+                      variant="secondary" 
+                      size="sm"
+                    >
+                      Add Event
+                    </Button>
                   </div>
+                  <div className="space-y-4">
+                    {events.map((event, index) => (
+                      <Input
+                        key={index}
+                        value={event}
+                        onChange={(e) => handleEventChange(index, e.target.value)}
+                        placeholder={`Event ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                  {addFreeSpace && events.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      A free space will automatically be placed in the center of each player's board.
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="addFreeSpace" 
-                    checked={addFreeSpace}
-                    onCheckedChange={setAddFreeSpace}
-                  />
-                  <div className="flex items-center">
-                    <label htmlFor="addFreeSpace" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Add a free space
-                    </label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="ml-1 cursor-help text-muted-foreground">ⓘ</div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="w-[220px]">
-                            Add a free space in the center of each player's board.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                <Button type="submit" className="w-full" disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}>
+                  {isLoading ? "Creating..." : "Create Game"}
+                </Button>
+              </form>
+            ) : (
+              <form className="space-y-6" onSubmit={handleJoinAsHost}>
+                <div className="space-y-2">
+                  <label className="block text-lg font-medium text-foreground">Enter your username (Host)</label>
+                  <div className="relative">
+                    <Input
+                      value={username}
+                      onChange={handleUsernameChange}
+                      placeholder="Your username"
+                      maxLength={maxUsernameLength}
+                      className="pr-16"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {charCount}/{maxUsernameLength}
+                    </span>
                   </div>
                 </div>
-              </div>
-
+                <Button type="submit" className="w-full" disabled={!username.trim() || !userId || isLoading}>
+                  {isLoading ? "Joining..." : "Join as Host"}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+        {/* Right: Dashboard Preview Section */}
+        <div className="flex flex-col gap-6">
+          {/* Game Configuration Summary */}
+          <Card className="bg-secondary/10 border border-border">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Game Configuration</h3>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-lg font-medium text-foreground">
-                    Bingo Events 
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      ({events.length}/{allowMoreEvents ? `${getBoardCapacity()}+` : maxEvents})
-                      {addFreeSpace && (
-                        <span className="ml-1 text-xs text-lime-600">
-                          (includes one free space in center)
-                        </span>
-                      )}
-                    </span>
-                  </label>
-                  <Button 
-                    onClick={handleAddEvent} 
-                    disabled={!allowMoreEvents && events.length >= maxEvents} 
-                    variant="secondary" 
-                    size="sm"
-                  >
-                    Add Event
-                  </Button>
+                  <span className="text-muted-foreground">Board Size:</span>
+                  <span className="font-medium">{boardSize}x{boardSize}</span>
                 </div>
-                <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Vote Threshold:</span>
+                  <span className="font-medium">{typeof window !== 'undefined' ? (document.getElementById('threshold')?.value || 50) : 50}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Total Events:</span>
+                  <span className="font-medium">{events.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Allow More Events:</span>
+                  <span className="font-medium">{allowMoreEvents ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Free Space:</span>
+                  <span className="font-medium">{addFreeSpace ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Events Preview */}
+          <Card className="bg-card border border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">Bingo Events Preview</h3>
+                <Button type="button" variant="outline" size="sm" onClick={handleGenerateSampleBoard}>
+                  Generate Sample Board
+                </Button>
+              </div>
+              {events.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No events added yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {events.map((event, index) => (
-                    <Input
-                      key={index}
-                      value={event}
-                      onChange={(e) => handleEventChange(index, e.target.value)}
-                      placeholder={`Event ${index + 1}`}
-                    />
+                    <div key={index} className="p-3 bg-background rounded border border-border flex items-center">
+                      <span className="text-muted-foreground text-xs mr-2">#{index + 1}</span>
+                      <span>{event}</span>
+                    </div>
                   ))}
                 </div>
-                {addFreeSpace && events.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    A free space will automatically be placed in the center of each player's board.
-                  </p>
-                )}
-              </div>
-
-              <Button type="submit" className="w-full" disabled={events.length === 0 || events.some(event => !event.trim()) || !userId || isLoading}>
-                {isLoading ? "Creating..." : "Create Game"}
-              </Button>
-            </form>
-          ) : (
-            <form className="space-y-6" onSubmit={handleJoinAsHost}>
-              <div className="space-y-2">
-                <label className="block text-lg font-medium text-foreground">Enter your username (Host)</label>
-                <div className="relative">
-                  <Input
-                    value={username}
-                    onChange={handleUsernameChange}
-                    placeholder="Your username"
-                    maxLength={maxUsernameLength}
-                    className="pr-16"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    {charCount}/{maxUsernameLength}
-                  </span>
+              )}
+              {sampleBoard && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-semibold mb-2">Sample Board Preview</h4>
+                  <BingoBoard size={boardSize} cells={sampleBoard} />
                 </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={!username.trim() || !userId || isLoading}>
-                {isLoading ? "Joining..." : "Join as Host"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       <Toaster />
     </div>
   );

@@ -1,4 +1,6 @@
+import { J } from 'framer-motion/dist/types.d-6pKw1mTI';
 import { Client, Databases, Permission, Role } from 'node-appwrite';
+import { createHash } from 'node:crypto';
 
 export default async ({ req, res, log, error }) => {
   const client = new Client();
@@ -86,11 +88,23 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
+    // Create a new player board based on events in the game
+    const gameDimensions = Math.ceil(Math.sqrt(game.events.length));
+    const shuffledGame = [...game].sort(() => Math.random() - 0.5);
+    const totalCells = gameDimensions * gameDimensions;
+    const uniqueElements = shuffledGame.slice(0, totalCells);
+
+    const newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) =>
+      uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions)
+    );
+
     // Create new player object and stringify it for storage
     const newPlayerObj = {
       userId,
       username: username.trim(),
-      ticked: []
+      ticked: [],
+      playerBoard: newPlayerBoard,
+      boardHash: createHash('sha256').update(JSON.stringify(newPlayerBoard)).digest('hex'),
     };
     const newPlayerString = JSON.stringify(newPlayerObj);
     players.push(newPlayerString);
@@ -98,12 +112,6 @@ export default async ({ req, res, log, error }) => {
 
 
     try {
-      // Get existing permissions first
-      const existingDoc = await database.getDocument(
-        process.env.BINGO_DATABASE_ID,
-        process.env.GAMES_COLLECTION_ID,
-        gameId
-      );
 
       const updatedGame = await database.updateDocument(
         process.env.BINGO_DATABASE_ID,
@@ -112,7 +120,7 @@ export default async ({ req, res, log, error }) => {
         {
           players
         },
-        [...existingDoc.$permissions, Permission.read(Role.user(userId))]
+        [...game.$permissions, Permission.read(Role.user(userId))]
       );
 
       console.log("Updated game document:", updatedGame);

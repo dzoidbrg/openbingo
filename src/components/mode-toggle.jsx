@@ -15,10 +15,6 @@ import {
 
 export function ModeToggle() {
   const { setTheme } = useTheme()
-  
-  React.useEffect(() => {
-    setTheme("light")
-  }, [])
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
