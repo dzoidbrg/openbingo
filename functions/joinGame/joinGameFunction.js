@@ -18,7 +18,6 @@ export default async ({ req, res, log, error }) => {
 
     const { gameId, userId, username, ...extraFields } = payload;
     
-    // Check for any unauthorized fields
     if (Object.keys(extraFields).length > 0) {
       return res.json({
         success: false,
@@ -26,7 +25,6 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
-    // Validate required fields and username length
     if (!gameId || !userId || !username || typeof username !== 'string') {
       return res.json({
         success: false,
@@ -34,7 +32,6 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
-    // Check username length
     if (username.length > 20) {
       return res.json({
         success: false,
@@ -42,7 +39,6 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
-    // Get the game document
     const game = await database.getDocument(
       process.env.BINGO_DATABASE_ID,
       process.env.GAMES_COLLECTION_ID,
@@ -58,15 +54,12 @@ export default async ({ req, res, log, error }) => {
 
     console.log("Fetched game data:", game);
 
-    // Assume players is an array of JSON strings
     let players = game.players || [];
 
-    // Parse existing players to check for duplicates
     const parsedPlayers = players.map(playerString => {
       try {
         return JSON.parse(playerString);
       } catch (e) {
-        // In case it's already an object or malformed, return as-is.
         return playerString;
       }
     });
@@ -79,7 +72,6 @@ export default async ({ req, res, log, error }) => {
       return res.json({ success: false, error: 'Username already taken. Please choose another.' });
     }
 
-    // check for the game status being 'waiting', if its not then return an error
     if (game.status !== 'waiting') {
       return res.json({
         success: false,
@@ -87,7 +79,6 @@ export default async ({ req, res, log, error }) => {
       });
     }
 
-    // Create a new player board based on events in the game
     const gameDimensions = Math.ceil(Math.sqrt(game.events.length));
     const shuffledGame = [...game.events].sort(() => Math.random() - 0.5);
     const totalCells = gameDimensions * gameDimensions;
@@ -109,6 +100,8 @@ export default async ({ req, res, log, error }) => {
       uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions)
     );
     }
+
+    console.log("New player board created:", newPlayerBoard);
 
     // Create new player object and stringify it for storage
     const newPlayerObj = {
