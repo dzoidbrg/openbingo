@@ -87,7 +87,7 @@ export default async ({ req, res, log, error }) => {
     let newPlayerBoard;
     // check for free space
     if (game.addFreeSpace) {
-      const newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) => {
+      newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) => {
         const rowElements = uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions);
         if (row === Math.floor(gameDimensions / 2)) {
           const midIndex = Math.floor(gameDimensions / 2);
@@ -96,7 +96,7 @@ export default async ({ req, res, log, error }) => {
         return rowElements;
       });
     } else {
-    const newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) =>
+     newPlayerBoard = Array.from({ length: gameDimensions }, (_, row) =>
       uniqueElements.slice(row * gameDimensions, (row + 1) * gameDimensions)
     );
     }
