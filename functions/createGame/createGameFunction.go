@@ -191,6 +191,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		Host:            creatorId,
 		RandomizeBoards: randomizeBoards,
 		AddFreeSpace:    addFreeSpace,
+		FreeSpaceText:   "Free Space",
 	}
 
 	if addFreeSpace {
