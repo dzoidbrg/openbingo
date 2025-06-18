@@ -9,7 +9,7 @@ export default function WinnerPage({ params }) {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
   // Fetch the game document to get the winner info.
   useEffect(() => {
     const fetchGame = async () => {

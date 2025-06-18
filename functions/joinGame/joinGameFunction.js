@@ -89,7 +89,7 @@ export default async ({ req, res, log, error }) => {
 
     // Create a new player board based on events in the game
     const gameDimensions = Math.ceil(Math.sqrt(game.events.length));
-    const shuffledGame = [...game].sort(() => Math.random() - 0.5);
+    const shuffledGame = [...game.events].sort(() => Math.random() - 0.5);
     const totalCells = gameDimensions * gameDimensions;
     const uniqueElements = shuffledGame.slice(0, totalCells);
     
